@@ -237,6 +237,7 @@ do {
     switch args.first {
     case "chunk": try await benchChunk(args[1], args[2])
     case "screen": try await benchScreen(args[1], args.count > 2 ? args[2] : nil)
+    case "screencost": try await benchScreenCost(args[1], args.count > 2 ? args[2] : nil, args.count > 3 ? args[3] : nil)
     case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B")
     case "stream":
         // How soon does the user see something when the card streams?
