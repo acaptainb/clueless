@@ -3,6 +3,7 @@
 //   clueless-bench screen <image>                    compare OCR text vs screenshot vs both
 //   clueless-bench answer [port] [label]             question + catch-up test set on one model
 //   clueless-bench watch  [port]                     watcher: code check alone vs code check + 2B
+//   clueless-bench cache  [port]                     prompt cache reuse: classic vs stable prompt layout
 //   clueless-bench tts                               speech latency
 //   clueless-bench prompts                           which prompt files are in use (needs no servers)
 //
@@ -254,6 +255,7 @@ do {
             print("run \(run): first words on screen \(f(firstText.value ?? -1))s, 'asked' complete \(f(askedDone.value ?? -1))s, whole card \(f(card.stats.seconds))s | asked: \(card.asked.prefix(60)) | sources \(card.sources)")
         }
     case "watch": try await benchWatch(port: args.count > 1 ? Int(args[1])! : 8082)
+    case "cache": try await benchCache(port: args.count > 1 ? Int(args[1])! : 8080)
     case "tts":
         let speaker = try await Speaker()
         print("TTSKit load: \(f(speaker.loadSeconds))s")
@@ -265,7 +267,7 @@ do {
         print("data folder: \(Prompts.dataRoot.path)")
         for line in Prompts.report() { print(line) }
     default:
-        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] | watch [port] | tts | prompts")
+        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] | watch [port] | cache [port] | tts | prompts")
     }
 } catch {
     print("error: \(error.localizedDescription)")
