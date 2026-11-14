@@ -18,6 +18,14 @@ final class AppState: ObservableObject {
     @Published var question = ""
     @Published var focusQuestion = 0          // bumped by the hotkey to focus the field
     @Published var hud = HUD()
+    /// Shown as a warning row in the panel while a Bonsai server is down, loading or being started.
+    @Published var serverIssue: String?
+    @Published var serverCanRestart = false
+    @Published var startingServers = false
+    // Server supervision state (used by the extension in Servers.swift).
+    var lastServerStart = Date.distantPast
+    var answererDeadChecks = 0
+    var autoStartAttempts = 0
     @AppStorage("userName") var userName = "Yusuf"
     @AppStorage("speak") var speak = true
     @AppStorage("screenMethod") var screenMethodRaw = ScreenMethod.both.rawValue
@@ -65,13 +73,15 @@ final class AppState: ObservableObject {
     // MARK: lifecycle
 
     private func load() async {
+        // Bring the Bonsai servers up while the speech models load.
+        Task { await checkServers(); if !hud.answerer, !startingServers { await checkServers() } }
         do {
             // Keep every model loaded for the life of the app.
             transcriber = try await Transcriber()
             status = "Loading voice…"
             speaker = try? await Speaker()
             await refreshHUD()
-            status = hud.answerer ? "Ready" : "Bonsai servers are not running: ./scripts/servers.sh start"
+            status = "Ready"
             await start()
         } catch {
             status = "Could not load speech models: \(error.localizedDescription)"
@@ -201,6 +211,12 @@ final class AppState: ObservableObject {
 
     private func run(_ task: AnswerTask, title: String, question: String? = nil) async {
         guard !thinking else { return }
+        if startingServers {
+            var waiting = Card(task: task)
+            waiting.answer = "The Bonsai servers are still starting. Try again in a few seconds."
+            cardTitle = title; card = waiting
+            return
+        }
         thinking = true; cardTitle = title; card = nil
         defer { thinking = false }
         speaker?.stop()
@@ -236,8 +252,11 @@ final class AppState: ObservableObject {
             if speak, !result.spoken.isEmpty { speaker?.say(result.spoken) }
         } catch {
             var failed = Card(task: task)
-            failed.answer = "Bonsai did not answer. Is ./scripts/servers.sh start running? (\(error.localizedDescription))"
+            failed.answer = "Bonsai did not answer (\(error.localizedDescription)). Clueless is checking the servers; try again in a few seconds."
             card = failed
+            Log.write("[card failed] \(error.localizedDescription)")
+            // Check right away instead of waiting for the next timer tick.
+            Task { await checkServers() }
         }
     }
 
@@ -246,8 +265,7 @@ final class AppState: ObservableObject {
     // MARK: HUD
 
     private func refreshHUD() async {
-        hud.answerer = await answerer.client.isUp()
-        hud.watcher = await watcher.client.isUp()
+        await checkServers()
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
         let kr = withUnsafeMutablePointer(to: &info) {
