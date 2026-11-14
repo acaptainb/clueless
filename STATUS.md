@@ -4,17 +4,41 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 5:40 pm ET by Yusuf
+Last updated: Sat Nov 14, 5:50 pm ET by Aziz
 
 ## People
 
-| Person | Codes on | Role | Branch prefix | Notes folder |
-|---|---|---|---|---|
-| Aziz | Windows laptop. Cannot build or run the app at all | B, the engine (proposed, confirm) | `aziz/` | `team/aziz/` |
-| Yusuf | Laptop. Coding only | A, the app (proposed, confirm) | `yusuf/` | `team/yusuf/` |
+| Person | GitHub | Codes on | Role | Branch prefix | Notes folder |
+|---|---|---|---|---|---|
+| Aziz | `acaptainb` | Windows laptop (cannot build or run the app). Also the person usually at the Mac mini | B, the engine (proposed, confirm) | `aziz/` | `team/aziz/` |
+| Yusuf | (fill in) | Laptop. Coding only | A, the app (proposed, confirm) | `yusuf/` | `team/yusuf/` |
 
-Role A owns `Sources/Clueless/`. Role B owns `Sources/CluelessCore/`, `Sources/clueless-bench/`, `scripts/`.
-`AppState.swift` is the glue file: A owns it; B adds functions in the core and A calls them.
+All work before Sat 5:50 pm was done by Aziz at the Mac mini.
+
+## Roles in detail
+
+**Role B, the engine: what the app thinks and says.** Folders: `Sources/CluelessCore/`, `Sources/clueless-bench/`, `scripts/`.
+- Owns: the prompts, the Bonsai servers and their speed, the watcher, speaker labels and names, session
+  notes, the benchmark test sets, the demo assets (lecture video, PDF, recorded call).
+- Tasks: T04, T08, T09, T10, T13, T14, T15, T19, T21, T26.
+- How it is tested: almost entirely by `./scripts/check.sh`, which gives scores and timings with nobody
+  watching the screen. That is why it suits a laptop that cannot compile.
+- Success looks like: same or better scores, lower latency numbers in BENCHMARKS.md.
+
+**Role A, the app: what the user sees, hears and triggers.** Folder: `Sources/Clueless/`.
+- Owns: screen and audio capture, the floating panel, hotkeys, the webcam look-away trigger, spoken
+  answers, the HUD, restarting things when they fail.
+- Tasks: T01, T02, T03, T05, T06, T07, T11, T12, T16, T17, T20, T25.
+- How it is tested: live, at the Mac mini, by a person looking and listening (`check.sh <branch> app`).
+  The benchmarks cannot see any of it, so this role needs the most Mac mini time.
+- Success looks like: every trigger works first time, nothing hangs, the demo runs for 20 minutes.
+
+**Shared.** T18 (soak test), T22 (reaching the Mac mini), T23 (video), T24 (submission), and the interface
+between the two halves: `TimelineLine`, `Watcher.watch`, `Answerer.answer`, `Card`. `AppState.swift` connects
+the halves: A owns it; when B adds a capability, B writes it in the core and A wires it into the app.
+
+**Mac mini runner.** Whoever is at the Mac mini (or the coding agent running on it) works through the test
+queue: runs `check.sh` on queued branches, does the live tests, merges what passes, records the result.
 
 ## Machines
 
@@ -127,13 +151,13 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
-| Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Yusuf | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
-| Team tracking: STATUS.md, WORKLOG.md, workflow rules | Yusuf | Sat 5:25 pm | `main` |
-| Answers stream into the card (first words in 0.8 s) | Yusuf | Sat 4:58 pm | PR #1 |
-| Live system-audio capture and transcription verified in the app | Yusuf | Sat 4:55 pm | PR #1 |
-| Screen Recording permission survives rebuilds (signing fix) | Yusuf | Sat 4:52 pm | PR #1 |
-| Method benchmarks: answerer model, watcher model, screen input, audio chunking | Yusuf | Sat 4:10 pm | PR #1, BENCHMARKS.md |
-| Study-mode app: capture, floating panel, hotkeys, cards with receipts, HUD basics | Yusuf | Sat 4:00 pm | PR #1 |
-| Engine core: timeline, Bonsai client, watcher, answerer, chunked transcription, OCR, speech | Yusuf | Sat 3:50 pm | PR #1 |
-| M0 smoke tests: Bonsai 9B text and image, watcher, Argmax transcribe, speak, diarize | Yusuf | Sat 3:40 pm | PR #1, tag `m0` |
-| Bonsai servers: llama.cpp fork built from source, 9B/4B/2B models downloaded and checksummed | Yusuf | Sat 3:30 pm | `scripts/servers.sh` |
+| Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
+| Team tracking: STATUS.md, WORKLOG.md, workflow rules | Aziz | Sat 5:25 pm | `main` |
+| Answers stream into the card (first words in 0.8 s) | Aziz | Sat 4:58 pm | PR #1 |
+| Live system-audio capture and transcription verified in the app | Aziz | Sat 4:55 pm | PR #1 |
+| Screen Recording permission survives rebuilds (signing fix) | Aziz | Sat 4:52 pm | PR #1 |
+| Method benchmarks: answerer model, watcher model, screen input, audio chunking | Aziz | Sat 4:10 pm | PR #1, BENCHMARKS.md |
+| Study-mode app: capture, floating panel, hotkeys, cards with receipts, HUD basics | Aziz | Sat 4:00 pm | PR #1 |
+| Engine core: timeline, Bonsai client, watcher, answerer, chunked transcription, OCR, speech | Aziz | Sat 3:50 pm | PR #1 |
+| M0 smoke tests: Bonsai 9B text and image, watcher, Argmax transcribe, speak, diarize | Aziz | Sat 3:40 pm | PR #1, tag `m0` |
+| Bonsai servers: llama.cpp fork built from source, 9B/4B/2B models downloaded and checksummed | Aziz | Sat 3:30 pm | `scripts/servers.sh` |
