@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:45 pm ET by Yusuf
+Last updated: Sat Nov 14, 6:40 pm ET by Yusuf
 
 ## People
 
@@ -109,6 +109,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T07 Start speaking as soon as the first sentence of a card is complete, not after the whole card | Yusuf | `yusuf/speak-early` | Sat 6:40 pm | Written on the MacBook, compile-checked only |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
 | T09 Keep the prompt prefix identical between requests so the server reuses its cache | Aziz | `aziz/prompt-cache` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T19 Forced cut at 8 s can split a word: cut at the quietest point instead | Aziz | `aziz/word-cut` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
@@ -135,7 +136,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 | ID | Task | Suggested |
 |---|---|---|
 | T06 | Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf |
-| T07 | Start speaking the first field as soon as it is complete, not after the whole card | Yusuf |
 
 ### Performance (the main focus)
 | ID | Task | Suggested |
