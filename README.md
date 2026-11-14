@@ -73,6 +73,19 @@ All building and testing happens on one Mac mini; laptops are for writing code.
 ./scripts/check.sh <branch> app    # the same, then launches that branch's app for a live test
 ```
 
+## Changing a prompt or a test case
+
+Prompts and test cases are data files, so they can be edited on any machine without touching Swift.
+
+- `prompts/watcher.txt` is the watcher's system prompt. The answerer's is `prompts/answerer_common.txt` followed by
+  `answerer_question.txt`, `answerer_catch_up.txt` or `answerer_notes.txt`, depending on the task.
+- The files are read on every request: an edit shows up in the next answer, with no rebuild and no restart.
+  If a file is missing or empty, the copy built into `Bonsai.swift` is used.
+- `bench/call.json` is the sample call (line N becomes `L`N), `bench/questions.json` the questions with expected
+  keywords (`"a|b"` means either) and acceptable source lines, `bench/watch.json` the watcher lines with `want`,
+  `bench/screen.json` the slide questions.
+- `clueless-bench prompts` prints which prompt files are in use. Then push and run `./scripts/check.sh <branch>`.
+
 ## Layout
 
 ```
@@ -80,6 +93,8 @@ Sources/CluelessCore   timeline, Bonsai client, watcher, answerer, chunked trans
 Sources/Clueless       the app: ScreenCaptureKit capture, floating panel, hotkeys, HUD
 Sources/clueless-bench headless benchmarks (no permissions needed)
 scripts/               servers.sh, make_app.sh, smoke_bonsai.py
+prompts/               the prompt text for the watcher and the answerer, one .txt file each
+bench/                 benchmark test cases as JSON: sample call, questions, watcher lines, slide questions
 ```
 
 The shared interface: `TimelineLine`, `Watcher.watch(lines, userName) -> Decision`,

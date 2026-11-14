@@ -1,0 +1,17 @@
+{
+  "user": "Yusuf",
+  "lines": [
+    {"source": "them", "speaker": "Maya", "text": "Okay, let's start. First item is the launch checklist for the mobile release."},
+    {"source": "them", "speaker": "Sam", "text": "The API changes are merged, but the push notification service is still failing in staging."},
+    {"source": "me", "text": "I can look at the push service after this call."},
+    {"source": "them", "speaker": "Maya", "text": "Great. Priya, where are we on the App Store screenshots?"},
+    {"source": "them", "speaker": "Priya", "text": "Screenshots are done. I need the final copy from marketing by Wednesday."},
+    {"source": "them", "speaker": "Sam", "text": "One more thing, the database migration takes about forty minutes, so we need a maintenance window."},
+    {"source": "them", "speaker": "Maya", "text": "Let's do the migration Thursday night at ten p.m. Sam owns it."},
+    {"source": "them", "speaker": "Priya", "text": "Budget wise, we have twelve thousand dollars left for the launch ads."},
+    {"source": "them", "speaker": "Maya", "text": "Good. We decided to cut the tablet layout from this release and ship it in January."},
+    {"source": "them", "speaker": "Sam", "text": "Agreed. That saves us about a week of QA."},
+    {"source": "them", "speaker": "Maya", "text": "Yusuf, can your team still hit Friday for the release candidate, given the push notification bug?"}
+  ],
+  "catchup": {"asked": ["friday"], "source": 11}
+}

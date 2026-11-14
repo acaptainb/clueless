@@ -8,6 +8,7 @@ struct OverlayView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
+            if let issue = state.serverIssue { serverRow(issue) }
             transcript
             askBar
             if state.thinking { thinkingRow }
@@ -37,6 +38,20 @@ struct OverlayView: View {
             Button(action: state.toggle) { Image(systemName: state.recording || state.restartingCapture ? "pause.fill" : "play.fill") }
                 .buttonStyle(.borderless).help(state.recording || state.restartingCapture ? "Pause capture" : "Resume capture")
         }
+    }
+
+    // A Bonsai server is down, loading or being started.
+    private func serverRow(_ issue: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            if state.startingServers { ProgressView().controlSize(.small) }
+            else { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange) }
+            Text(issue).font(.caption).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            if state.serverCanRestart { Button("Restart", action: state.restartServers).controlSize(.small) }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
     }
 
     private var transcript: some View {
@@ -70,6 +85,7 @@ struct OverlayView: View {
                 Button("Session notes", action: state.notes)
                 Toggle("Speak answers", isOn: $state.speak)
                 Picker("Screen input", selection: $state.screenMethodRaw) {
+                    Text("Auto: screenshot only for visual questions").tag(ScreenMethod.auto.rawValue)
                     Text("Screenshot + OCR text (most accurate)").tag(ScreenMethod.both.rawValue)
                     Text("OCR text only (fastest)").tag(ScreenMethod.ocr.rawValue)
                     Text("Screenshot only").tag(ScreenMethod.image.rawValue)
