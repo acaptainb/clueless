@@ -10,7 +10,7 @@ enum Mode: String, CaseIterable, Identifiable { case study = "Study", call = "Ca
 final class AppState: ObservableObject {
     @Published var mode: Mode = .study
     @Published var recording = false
-    @Published var status = "Loading models…" { didSet { FileHandle.standardError.write(Data("[status] \(status)\n".utf8)) } }
+    @Published var status = "Loading models…" { didSet { Log.write("[status] \(status)") } }
     @Published var tail: [TimelineLine] = []
     @Published var card: Card?
     @Published var cardTitle = ""
@@ -116,6 +116,16 @@ final class AppState: ObservableObject {
             recording = true
             status = "Listening"
             timeline.append(.system, "Session started in \(mode.rawValue.lowercased()) mode")
+            // Test hook for live capture: ask a question after a delay, then a catch-up.
+            if let q = ProcessInfo.processInfo.environment["CLUELESS_TEST_QUESTION"] {
+                let delay = Double(ProcessInfo.processInfo.environment["CLUELESS_TEST_DELAY"] ?? "") ?? 45
+                Task { [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1e9))
+                    self?.question = q; self?.ask()
+                    try? await Task.sleep(nanoseconds: 25_000_000_000)
+                    self?.catchUp()
+                }
+            }
         } catch {
             status = "Screen Recording permission needed (System Settings › Privacy & Security), then relaunch. \(error.localizedDescription)"
         }
@@ -156,7 +166,7 @@ final class AppState: ObservableObject {
             guard let text = try? await transcriber.transcribe(chunk.samples), text.count > 1 else { return }
             self.hud.stt = Date().timeIntervalSince(t0)
             let line = self.timeline.append(source == .mic ? .me : .them, text, at: chunk.startedAt)
-            FileHandle.standardError.write(Data("[stt \(String(format: "%.2f", self.hud.stt))s] \(line.rendered)\n".utf8))
+            Log.write("[stt \(String(format: "%.2f", self.hud.stt))s] \(line.rendered)")
             self.tail = self.timeline.last(40).filter { $0.source == .them || $0.source == .me }.suffix(5).map { $0 }
             if self.mode == .call, line.source == .them { self.runWatcher() }
         }
@@ -198,7 +208,11 @@ final class AppState: ObservableObject {
         // Screen: OCR text and/or a downscaled screenshot, depending on the method setting.
         var screenText = "", image: Data?
         let method: ScreenMethod = task == .notes ? .none : screenMethod
-        if method != .none, let shot = try? await capture.screenshot() {
+        var shot: CGImage?
+        if method != .none {
+            do { shot = try await capture.screenshot() } catch { Log.write("[screenshot failed] \(error.localizedDescription)") }
+        }
+        if let shot {
             let t0 = Date()
             if method != .image { screenText = await Task.detached { ScreenText.recognize(shot) }.value }
             hud.ocr = Date().timeIntervalSince(t0)
@@ -211,9 +225,12 @@ final class AppState: ObservableObject {
             .filter { $0.source == .them || $0.source == .me }
         do {
             let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
-                                                   question: question, userName: userName)
+                                                   question: question, userName: userName) { [weak self] partial in
+                // Show the card growing as tokens arrive.
+                Task { @MainActor in if self?.thinking == true { self?.card = partial } }
+            }
             card = result
-            FileHandle.standardError.write(Data("[card \(task.rawValue) \(String(format: "%.2f", result.stats.seconds))s ocr \(screenText.count) chars image \(image?.count ?? 0) bytes] \(result.raw)\n".utf8))
+            Log.write("[card \(task.rawValue) \(String(format: "%.2f", result.stats.seconds))s, first token \(String(format: "%.2f", result.stats.firstTokenSeconds))s, ocr \(screenText.count) chars, image \(image?.count ?? 0) bytes] \(result.raw)")
             hud.llm = result.stats.seconds; hud.tps = result.stats.tokensPerSecond
             hud.tokens = result.stats.promptTokens + result.stats.outputTokens
             if speak, !result.spoken.isEmpty { speaker?.say(result.spoken) }

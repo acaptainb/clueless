@@ -79,15 +79,33 @@ Chosen: **cut at the first pause after 2 s, forced cut at 8 s.** It matches the 
 than half the lag. Fixed short windows cut words in half. WhisperKit's built-in `AudioStreamTranscriber` only reads
 from a microphone device, so system audio needs this chunk loop.
 
-## 5. In-app end to end
+## 5. Streaming the card (`clueless-bench stream`)
 
-Test lecture played into the app through the `CLUELESS_AUDIO_FILE` hook: 18 transcript lines kept pace with real
-time (0.6 s transcribe per chunk); typed question answered correctly in 4.9 s with receipts [15, 17]; catch-up card
-in 4.8 s. Real screen and audio capture is untested until Screen Recording permission is granted.
+Catch-up card on the sample call, 9B-MTP, warm.
+
+| | Time |
+|---|---|
+| First words visible | 0.8 s |
+| "You were asked" complete | 2.1 to 2.5 s |
+| Whole card | 6.3 s |
+
+The app streams, so the user reads the first field while the rest is written. Without streaming nothing shows for 6 s.
+
+## 6. In-app end to end
+
+- Played-back file (`CLUELESS_AUDIO_FILE` hook): 18 transcript lines kept pace with real time (0.6 s transcribe
+  per chunk); typed question answered correctly in 4.9 s with receipts [15, 17]; catch-up card in 4.8 s.
+- Live capture (Screen Recording granted): the lecture played through the speakers was transcribed in real time
+  through ScreenCaptureKit system audio, 0.6 s per chunk. A live question with a real full-screen capture took
+  7.5 s (OCR 924 characters, 95 KB screenshot, 1146 prompt tokens, first token after 6.1 s). The image is what
+  makes the first token slow; OCR-only is the faster setting.
+- Not yet verified live: answer correctness against a real lecture on screen, spoken answers, hotkeys,
+  call mode with the microphone, Wi-Fi off.
 
 ## Known issues
 
 - First launch of a new build spends minutes compiling the Whisper Core ML model (6 min in the app, 2 min in the
   bench tool). Later launches take seconds. Launch once before any demo.
 - A forced cut at 8 s can split a word across two lines.
-- Cards appear all at once after 2 to 8 s. Streaming the answer into the card would make it feel much faster.
+- With a screenshot attached the first token takes about 6 s (image encoding). Consider OCR-only by default,
+  or a smaller image.

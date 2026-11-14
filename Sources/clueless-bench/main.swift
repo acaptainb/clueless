@@ -230,12 +230,26 @@ func benchWatch(port: Int) async throws {
 
 // MARK: main
 
+final class Box: @unchecked Sendable { var value: Double? }
+
 let args = Array(CommandLine.arguments.dropFirst())
 do {
     switch args.first {
     case "chunk": try await benchChunk(args[1], args[2])
     case "screen": try await benchScreen(args[1], args.count > 2 ? args[2] : nil)
     case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B")
+    case "stream":
+        // How soon does the user see something when the card streams?
+        let lines = sampleCall().all
+        for run in 1...3 {
+            let t0 = Date()
+            let firstText = Box(), askedDone = Box()
+            let card = try await Answerer().answer(.catchUp, lines: lines, screenText: "", userName: "Yusuf") { partial in
+                if firstText.value == nil, !partial.asked.isEmpty { firstText.value = Date().timeIntervalSince(t0) }
+                if askedDone.value == nil, !partial.missed.isEmpty { askedDone.value = Date().timeIntervalSince(t0) }
+            }
+            print("run \(run): first words on screen \(f(firstText.value ?? -1))s, 'asked' complete \(f(askedDone.value ?? -1))s, whole card \(f(card.stats.seconds))s | asked: \(card.asked.prefix(60)) | sources \(card.sources)")
+        }
     case "watch": try await benchWatch(port: args.count > 1 ? Int(args[1])! : 8082)
     case "tts":
         let speaker = try await Speaker()

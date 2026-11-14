@@ -180,6 +180,9 @@ Argmax
 - TTSKit downloads to `~/Documents/huggingface/models/...`; we copy that into `models/argmax/` and load
   with `modelFolder:` / `tokenizerFolder:`.
 - A new build's first launch spends minutes compiling the Whisper Core ML model. Launch before demos.
+- No signing team is available without Xcode. `scripts/make_app.sh` signs ad-hoc with the designated
+  requirement pinned to the bundle identifier, which keeps Screen Recording permission across rebuilds
+  (confirmed Nov 14). If permission gets stuck: `tccutil reset ScreenCapture com.clueless.app`, relaunch, grant.
 - CLI for smoke tests (built from the repo): `argmax-cli transcribe --stream`,
   `argmax-cli tts --text "..." --play`, `argmax-cli diarize --audio-path ...`.
   Homebrew also has `whisperkit-cli`.

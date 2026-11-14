@@ -27,11 +27,14 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict></plist>
 PLIST
 # Ad-hoc signature, no sandbox (the app talks to localhost servers).
-# Note: with ad-hoc signing macOS may ask for Screen Recording again after a rebuild.
-codesign --force --sign - --identifier com.clueless.app "$APP" >/dev/null 2>&1
+# By default an ad-hoc signature's designated requirement is the binary's hash, so macOS treats every
+# rebuild as a new app and drops Screen Recording / Microphone / Camera permission. Pinning the
+# requirement to the bundle identifier keeps the permission across rebuilds.
+codesign --force --sign - --identifier com.clueless.app \
+  --requirements '=designated => identifier "com.clueless.app"' "$APP"
 echo "built $APP"
 if [ "$1" = "run" ]; then
   pkill -x Clueless 2>/dev/null || true
-  open --stderr "$ROOT/.run/app.log" --stdout "$ROOT/.run/app.log" "$APP"
+  open --stderr "$ROOT/.run/stderr.log" "$APP"
   echo "launched; log: .run/app.log"
 fi

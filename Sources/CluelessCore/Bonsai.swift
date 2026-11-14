@@ -21,6 +21,8 @@ public struct BonsaiStats: Sendable {
     public init() {}
     public init(seconds: Double) { self.seconds = seconds }
     public var seconds: Double = 0
+    /// Streaming only: time until the first token arrived.
+    public var firstTokenSeconds: Double = 0
     public var promptTokens: Int = 0
     public var outputTokens: Int = 0
     public var tokensPerSecond: Double = 0
@@ -45,8 +47,9 @@ public struct BonsaiClient: Sendable {
         return (resp as? HTTPURLResponse)?.statusCode == 200
     }
 
-    public func chat(system: String, user: Content, maxTokens: Int, thinking: Bool = false,
-                     json: Bool = false) async throws -> (String, BonsaiStats) {
+    /// `onPartial`, when given, switches to streaming and is called with the text so far after every token.
+    public func chat(system: String, user: Content, maxTokens: Int, thinking: Bool = false, json: Bool = false,
+                     onPartial: (@Sendable (String) -> Void)? = nil) async throws -> (String, BonsaiStats) {
         var userContent: Any
         switch user {
         case .text(let s): userContent = s
@@ -68,6 +71,7 @@ public struct BonsaiClient: Sendable {
             "presence_penalty": json ? 0.0 : (thinking ? 1.0 : 1.5),
         ]
         if json { body["response_format"] = ["type": "json_object"] }
+        if onPartial != nil { body["stream"] = true }
 
         var req = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!)
         req.httpMethod = "POST"
@@ -76,6 +80,35 @@ public struct BonsaiClient: Sendable {
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let t0 = Date()
+        if let onPartial {
+            // Server-sent events: one "data: {json}" line per token, then "data: [DONE]".
+            let (bytes, resp) = try await URLSession.shared.bytes(for: req)
+            guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
+                throw NSError(domain: "Bonsai", code: 1, userInfo: [NSLocalizedDescriptionKey:
+                    "Bonsai server on port \(port) returned HTTP \((resp as? HTTPURLResponse)?.statusCode ?? 0)"])
+            }
+            var text = ""
+            var stats = BonsaiStats()
+            for try await line in bytes.lines {
+                guard line.hasPrefix("data: ") else { continue }
+                let payload = line.dropFirst(6)
+                if payload == "[DONE]" { break }
+                guard let obj = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else { continue }
+                if let choices = obj["choices"] as? [[String: Any]], let delta = choices.first?["delta"] as? [String: Any],
+                   let piece = delta["content"] as? String, !piece.isEmpty {
+                    if text.isEmpty { stats.firstTokenSeconds = Date().timeIntervalSince(t0) }
+                    text += piece
+                    onPartial(text)
+                }
+                if let tm = obj["timings"] as? [String: Any] {
+                    stats.promptTokens = (tm["prompt_n"] as? Int) ?? 0
+                    stats.outputTokens = (tm["predicted_n"] as? Int) ?? 0
+                    stats.tokensPerSecond = (tm["predicted_per_second"] as? Double) ?? 0
+                }
+            }
+            stats.seconds = Date().timeIntervalSince(t0)
+            return (text, stats)
+        }
         let (data, resp) = try await URLSession.shared.data(for: req)
         guard (resp as? HTTPURLResponse)?.statusCode == 200,
               let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -241,7 +274,8 @@ public struct Answerer: Sendable {
     }
 
     public func answer(_ task: AnswerTask, lines: [TimelineLine], screenText: String, image: Data? = nil,
-                       question: String? = nil, userName: String = "", thinking: Bool = false) async throws -> Card {
+                       question: String? = nil, userName: String = "", thinking: Bool = false,
+                       onPartial: (@Sendable (Card) -> Void)? = nil) async throws -> Card {
         var prompt = ""
         if !userName.isEmpty { prompt += "User name: \(userName)\n\n" }
         prompt += "TIMELINE (newest last):\n" + (lines.isEmpty ? "(nothing said yet)" : lines.rendered) + "\n\n"
@@ -251,15 +285,27 @@ public struct Answerer: Sendable {
         prompt += "Task: \(task.rawValue)"
 
         let content: BonsaiClient.Content = image.map { .textAndImage(prompt, pngOrJpeg: $0) } ?? .text(prompt)
+        let valid = Set(lines.map(\.id))
+        let stream: (@Sendable (String) -> Void)? = onPartial.map { callback in
+            { text in callback(Self.card(task, from: text, validIDs: valid, partial: true)) }
+        }
         let (out, stats) = try await client.chat(system: Self.system(task), user: content,
-                                                 maxTokens: task == .notes ? 500 : 220, thinking: thinking, json: true)
-        var card = Card(task: task, stats: stats, raw: out)
-        if let obj = JSONRepair.object(out) {
+                                                 maxTokens: task == .notes ? 500 : 220, thinking: thinking, json: true,
+                                                 onPartial: stream)
+        var card = Self.card(task, from: out, validIDs: valid, partial: false)
+        card.stats = stats
+        return card
+    }
+
+    /// Turn model output into a card. With `partial`, the JSON is still being written: pull out whatever
+    /// string fields have started so the UI can show them as they grow.
+    static func card(_ task: AnswerTask, from out: String, validIDs: Set<Int>, partial: Bool) -> Card {
+        var card = Card(task: task, raw: out)
+        if !partial, let obj = JSONRepair.object(out) {
             card.asked = (obj["asked"] as? String) ?? ""
             card.missed = (obj["missed"] as? String) ?? ""
             card.reply = (obj["reply"] as? String) ?? ""
             card.answer = (obj["answer"] as? String) ?? ""
-            let valid = Set(lines.map(\.id))
             let ids = (obj["sources"] as? [Any] ?? []).compactMap { v -> Int? in
                 if let i = v as? Int { return i }
                 if let s = v as? String { return Int(s.trimmingCharacters(in: CharacterSet(charactersIn: "L "))) }
@@ -267,7 +313,15 @@ public struct Answerer: Sendable {
             }
             // Receipts must point at real lines. Drop anything the model invented.
             var seen = Set<Int>()
-            card.sources = ids.filter { valid.contains($0) && seen.insert($0).inserted }
+            card.sources = ids.filter { validIDs.contains($0) && seen.insert($0).inserted }
+        } else if partial || out.contains("\"") {
+            card.asked = JSONRepair.partialString(out, key: "asked")
+            card.missed = JSONRepair.partialString(out, key: "missed")
+            card.reply = JSONRepair.partialString(out, key: "reply")
+            card.answer = JSONRepair.partialString(out, key: "answer")
+            if !partial, card.asked.isEmpty, card.missed.isEmpty, card.answer.isEmpty {
+                card.answer = out.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         } else {
             card.answer = out.trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -281,5 +335,20 @@ public enum JSONRepair {
         guard let start = s.firstIndex(of: "{"), let end = s.lastIndex(of: "}"), start < end else { return nil }
         let slice = String(s[start...end])
         return (try? JSONSerialization.jsonObject(with: Data(slice.utf8))) as? [String: Any]
+    }
+
+    /// Value of a string field in JSON that may still be incomplete (no closing quote yet).
+    public static func partialString(_ s: String, key: String) -> String {
+        guard let r = s.range(of: "\"\(key)\"\\s*:\\s*\"", options: .regularExpression) else { return "" }
+        var out = "", escaped = false
+        for ch in s[r.upperBound...] {
+            if escaped {
+                switch ch { case "n": out.append("\n"); case "t": out.append("\t"); case "u": break; default: out.append(ch) }
+                escaped = false
+            } else if ch == "\\" { escaped = true }
+            else if ch == "\"" { break }
+            else { out.append(ch) }
+        }
+        return out
     }
 }

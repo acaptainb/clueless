@@ -19,7 +19,7 @@ Everything runs on-device with Wi-Fi off:
 | Milestone | State |
 |---|---|
 | M0 smoke tests | Done, except the Wi-Fi-off run |
-| M1 study mode | Built. Verified end to end on a played-back lecture file; live capture needs Screen Recording permission to verify |
+| M1 study mode | Live system-audio transcription and screen questions work; cards stream in. Spoken answers and hotkeys not yet verified live |
 | M2 catch-up | Hotkey catch-up card with receipts works; look-away trigger not built |
 | M3 call mode | Microphone = You and the watcher trigger are wired; untested live. Notes exist; speaker names not built |
 
@@ -55,7 +55,8 @@ cmake --build vendor/llama.cpp/build-mac -j 8 --target llama-server
 ./scripts/make_app.sh run       # builds build/Clueless.app and launches it
 ```
 
-Grant Screen Recording (and Microphone for call mode) when macOS asks, then relaunch. The first launch of a new
+Grant Screen Recording (and Microphone for call mode) when macOS asks, then relaunch. The app is signed so that
+the permission survives rebuilds. The first launch of a new
 build takes a few minutes while Core ML compiles the Whisper model.
 
 - **⌥Space** ask a question about the screen or what was said
