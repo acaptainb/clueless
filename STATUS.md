@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:05 pm ET by Aziz
+Last updated: Sat Nov 14, 11:05 pm ET by Aziz
 
 ## People
 
@@ -111,6 +111,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T16 App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf | `yusuf/server-health` | Sat 5:50 pm | Written on the MacBook, compile-checked only |
 | T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
 | T26 Move the prompts and the benchmark test cases out of Swift into data files | Aziz | `aziz/prompts-data` | Sat 6:05 pm | Written on the Windows laptop, not compiled; needs `check.sh` on the Mac mini |
+| T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 11:05 pm | Being written on the Windows laptop, not compiled |
 
 ## Up next
 
@@ -133,7 +134,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### Performance (the main focus)
 | ID | Task | Suggested |
 |---|---|---|
-| T08 | Cut the screenshot cost (first token is 6 s with an image): smaller or cropped image, or OCR by default and image only for visual questions. Measure each | Aziz |
 | T09 | Keep the prompt prefix identical between requests so the server reuses its cache; measure prompt time | Aziz |
 | T10 | Grow the test set to about 20 questions and add real recorded audio, not only synthetic speech | Aziz |
 | T19 | The forced cut at 8 s can split a word across two lines: overlap chunks or cut at a word boundary | Aziz |
