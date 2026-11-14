@@ -34,8 +34,8 @@ struct OverlayView: View {
             }
             .pickerStyle(.segmented).frame(width: 110).labelsHidden()
             .onChange(of: state.mode) { state.modeChanged() }
-            Button(action: state.toggle) { Image(systemName: state.recording ? "pause.fill" : "play.fill") }
-                .buttonStyle(.borderless).help(state.recording ? "Pause capture" : "Resume capture")
+            Button(action: state.toggle) { Image(systemName: state.recording || state.restartingCapture ? "pause.fill" : "play.fill") }
+                .buttonStyle(.borderless).help(state.recording || state.restartingCapture ? "Pause capture" : "Resume capture")
         }
     }
 

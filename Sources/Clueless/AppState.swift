@@ -31,7 +31,14 @@ final class AppState: ObservableObject {
     }
 
     let timeline: Timeline
-    private let capture = Capture()
+    let capture = Capture()
+    // Capture supervision state (used by the extension in CaptureRestart.swift).
+    var wantRecording = false          // the user wants capture on; false after pause
+    var captureLive = false            // a real SCStream is running (not the file test hook)
+    var captureStartedAt = Date.distantPast
+    var captureRestarts = 0
+    @Published var restartingCapture = false
+    var captureWatchdog: Timer?
     private var transcriber: Transcriber?
     private var speaker: Speaker?
     private let answerer = Answerer()
@@ -79,16 +86,14 @@ final class AppState: ObservableObject {
     }
 
     func start() async {
-        guard !recording, transcriber != nil else { return }
-        // Pause-based chunks: best accuracy/lag trade-off in our benchmark (BENCHMARKS.md).
-        chunkers = [.system: AudioChunker(method: .silence(minSeconds: 2, maxSeconds: 8)),
-                    .mic: AudioChunker(method: .silence(minSeconds: 2, maxSeconds: 8))]
+        guard !recording, !restartingCapture, transcriber != nil else { return }
+        wantRecording = true
+        captureRestarts = 0
+        resetChunkers()
         capture.onAudio = { [weak self] source, samples in self?.ingest(source, samples) }
+        // If the stream dies, bring it back (CaptureRestart.swift).
         capture.onStop = { [weak self] error in
-            Task { @MainActor in
-                self?.recording = false
-                self?.status = "Capture stopped: \(error?.localizedDescription ?? "")"
-            }
+            Task { @MainActor in self?.captureStopped(error) }
         }
         // Test hook: CLUELESS_AUDIO_FILE plays a file into the pipeline as system audio, in real time.
         if let path = ProcessInfo.processInfo.environment["CLUELESS_AUDIO_FILE"] {
@@ -113,6 +118,7 @@ final class AppState: ObservableObject {
         }
         do {
             try await capture.start(microphone: mode == .call)
+            captureDidStart()
             recording = true
             status = "Listening"
             timeline.append(.system, "Session started in \(mode.rawValue.lowercased()) mode")
@@ -131,13 +137,22 @@ final class AppState: ObservableObject {
         }
     }
 
+    func resetChunkers() {
+        // Pause-based chunks: best accuracy/lag trade-off in our benchmark (BENCHMARKS.md).
+        chunkers = [.system: AudioChunker(method: .silence(minSeconds: 2, maxSeconds: 8)),
+                    .mic: AudioChunker(method: .silence(minSeconds: 2, maxSeconds: 8))]
+    }
+
     func stop() async {
+        wantRecording = false
+        captureLive = false
         await capture.stop()
         recording = false
         status = "Paused"
     }
 
-    func toggle() { Task { recording ? await stop() : await start() } }
+    // While a restart is in progress the button means "stop trying".
+    func toggle() { Task { (recording || restartingCapture) ? await stop() : await start() } }
 
     func modeChanged() { Task { if recording { await stop(); await start() } } }
 
