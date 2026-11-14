@@ -9,13 +9,13 @@ RUN="$ROOT/.run"; mkdir -p "$RUN"
 start() {
   # 9B answerer, with vision projector. The MTP file + draft-mtp speculation measured ~1.5x faster
   # than plain PQ2_0 with identical answers on our test set (see BENCHMARKS.md).
-  "$BIN" -m "$M/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf" --mmproj "$M/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf" \
+  nohup "$BIN" -m "$M/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf" --mmproj "$M/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf" \
     --spec-type draft-mtp --spec-draft-n-max 2 \
     -ngl 99 -fa on -c "${ANSWERER_CTX:-8192}" -np 1 --host 127.0.0.1 --port 8080 --offline \
     > "$RUN/answerer.log" 2>&1 & echo $! > "$RUN/answerer.pid"
   # Watcher, text only. 4B by default: 16/16 on our watcher test set vs 13-14/16 for 2B (see BENCHMARKS.md).
   # WATCHER_MODEL=2B halves the latency (0.5s vs 1.0s) at lower accuracy.
-  "$BIN" -m "$M/Ternary-Bonsai-2-${WATCHER_MODEL:-4B}-PQ2_0.gguf" \
+  nohup "$BIN" -m "$M/Ternary-Bonsai-2-${WATCHER_MODEL:-4B}-PQ2_0.gguf" \
     -ngl 99 -fa on -c "${WATCHER_CTX:-4096}" -np 1 --host 127.0.0.1 --port 8082 --offline \
     > "$RUN/watcher.log" 2>&1 & echo $! > "$RUN/watcher.pid"
   for p in 8080 8082; do

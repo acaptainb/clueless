@@ -64,6 +64,15 @@ build takes a few minutes while Core ML compiles the Whisper model.
 - **⌥C** catch me up
 - **⌥S** stop speaking
 
+## Testing a branch (Mac mini only)
+
+All building and testing happens on one Mac mini; laptops are for writing code.
+
+```sh
+./scripts/check.sh <branch>        # build + benchmarks in a separate working copy, prints PASS or FAIL
+./scripts/check.sh <branch> app    # the same, then launches that branch's app for a live test
+```
+
 ## Layout
 
 ```

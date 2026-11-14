@@ -22,3 +22,4 @@ snapshots/
 sessions/
 smoke/*.wav
 smoke/*.m4a
+.worktrees/

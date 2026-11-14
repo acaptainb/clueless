@@ -4,6 +4,7 @@
 #   ./scripts/make_app.sh run      ...and launch it, logging to .run/app.log
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
+# CLUELESS_ROOT (set by check.sh) says where models/ and .run/ live when building from another working copy.
 swift build -c release --product Clueless
 APP="build/Clueless.app"
 mkdir -p "$APP/Contents/MacOS" .run
@@ -23,7 +24,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>NSMicrophoneUsageDescription</key><string>Clueless transcribes your side of a call on this Mac. Audio never leaves the device.</string>
   <key>NSCameraUsageDescription</key><string>Clueless uses the camera on this Mac to notice when you look away, so it can catch you up.</string>
   <key>NSScreenCaptureUsageDescription</key><string>Clueless reads your screen and system audio on this Mac to answer questions about them.</string>
-  <key>LSEnvironment</key><dict><key>CLUELESS_ROOT</key><string>$ROOT</string></dict>
+  <key>LSEnvironment</key><dict><key>CLUELESS_ROOT</key><string>${CLUELESS_ROOT:-$ROOT}</string></dict>
 </dict></plist>
 PLIST
 # Ad-hoc signature, no sandbox (the app talks to localhost servers).
@@ -35,6 +36,6 @@ codesign --force --sign - --identifier com.clueless.app \
 echo "built $APP"
 if [ "$1" = "run" ]; then
   pkill -x Clueless 2>/dev/null || true
-  open --stderr "$ROOT/.run/stderr.log" "$APP"
+  open --stderr "${CLUELESS_ROOT:-$ROOT}/.run/stderr.log" "$APP"
   echo "launched; log: .run/app.log"
 fi
