@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 8:20 pm ET by Aziz
+Last updated: Sat Nov 14, 6:31 pm ET by Aziz
 
 ## People
 
@@ -70,6 +70,7 @@ Mac mini in use right now by: Yusuf (his three queued branches, run by the Mac m
 | `aziz/engine-combined` | Aziz | RUN THIS FIRST, it replaces the two Aziz rows below: T26 + T08 engine + T08 app wiring + `main`, merged with no code conflicts. One `check.sh aziz/engine-combined app` builds all of it; then do the T26 steps and the T08 steps (2) to (6) from the rows below against this branch. If it passes, merge this branch and drop the three separate ones. If the build fails, the error file tells which task: `Prompts.swift` or `loadCases` is T26, `ScreenInput.swift` or `ScreenCost.swift` is T08 | not run yet |
 | `aziz/prompts-data` | Aziz | T26. Engine only, so `check.sh aziz/prompts-data` is the whole test; it was written on Windows and has never been compiled, so expect to paste build errors back. (1) Build ok and PASS with the same scores as `main` (questions 10/10, watcher 15 or 16 of 16, catch-up 2 or 3 of 3). (2) The answer output has a line `== prompts: all 5 from prompts/*.txt`. If it says BUILT-IN, the files are not being found. (3) In `.worktrees/check`, `.build/release/clueless-bench prompts` prints five lines that all end "same as built-in". (4) Optional: add the word TEST to the end of `.worktrees/check/prompts/watcher.txt`, run `clueless-bench prompts` again and see "differs from built-in" with no rebuild, then `git -C .worktrees/check checkout prompts` | not run yet |
 | `aziz/screenshot-cost`, then `aziz/screenshot-cost-app` | Aziz | T08. Written on Windows, never compiled. (1) `check.sh aziz/screenshot-cost`. (2) Measure: `cd .worktrees/check && .build/release/clueless-bench screencost smoke/shot.png`. Expect `policy: 17/17`, and the `auto` rows at 6/6 with a first-token time close to the `ocr` row (1 image sent out of 6). Paste the table into BENCHMARKS.md. (3) Real full-screen capture: show `smoke/shot.png` full screen, `screencapture -x .run/full.png`, run the bench again on `.run/full.png`. (4) Pick the smallest size whose `both` row is still 6/6 and set it as the default in `ScreenPolicy.imageMaxSide` (`Sources/CluelessCore/ScreenInput.swift`). (5) Optional: restart the servers with `ANSWERER_IMAGE_MAX_TOKENS=256` and rerun; if the fork rejects `--image-max-tokens` the answerer will not start, so unset it. (6) `check.sh aziz/screenshot-cost-app app` (the app wiring, 2 files in `Sources/Clueless/`): the menu shows "Auto" selected; "when is the homework due" answers in about 1 to 2 s and the log line says `image 0 bytes`; "what does the diagram show" attaches the image. Both branches touch one line each in `Bonsai.swift` and `main.swift` that T26 also edits nearby: merge T26 first | not run yet |
+| `aziz/demo-assets` | Aziz | T21. No Swift changed, so the build cannot break; this is about the audio. (1) In the branch checkout: `python3 scripts/make_demo_assets.py --user Yusuf`. It should print three different call voices and write `demo/call/call.wav` (about 2 min), six `demo/lecture/audio/slideN.wav` and `demo/lecture/lecture.wav` (about 3 min). If it says not enough English voices, install two more in System Settings > Accessibility > Spoken Content. (2) `afplay demo/call/call.wav`: three clearly different voices, 8 s of silence after each question to the user. (3) Open `demo/lecture/slides.html` full screen, press Start: narration plays and the slides advance by themselves. (4) Open `demo/paper/learning-rate-note.pdf`: page 2 has a chart with three coloured curves. (5) With the app running, try the questions in `demo/README.md` (that part is T04) | not run yet |
 
 ## Milestones
 
@@ -177,7 +178,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 | Task | Who | When | Where |
 |---|---|---|---|
 | T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |
-| T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Being written on the Windows laptop; the audio is built on the Mac mini |
+| T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Written on the Windows laptop. Slides and PDF checked in a browser there; the audio script has never been run |
 | Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
 | Team tracking: STATUS.md, WORKLOG.md, workflow rules | Aziz | Sat 5:25 pm | `main` |
 | Answers stream into the card (first words in 0.8 s) | Aziz | Sat 4:58 pm | PR #1 |
