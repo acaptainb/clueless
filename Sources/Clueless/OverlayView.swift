@@ -83,10 +83,19 @@ struct OverlayView: View {
 
     private var askBar: some View {
         HStack(spacing: 6) {
-            TextField("Ask about what's on screen or what was said  (⌥Space)", text: $state.question)
+            TextField(state.listening ? "Listening… ask your question out loud" : "Ask about what's on screen or what was said  (⌥Space)",
+                      text: $state.question)
                 .textFieldStyle(.roundedBorder)
                 .focused($questionFocused)
                 .onSubmit(state.ask)
+            // Ask by voice: the microphone goes through Argmax WhisperKit, on this Mac.
+            Button(action: state.toggleVoiceQuestion) { Image(systemName: state.listening ? "mic.fill" : "mic") }
+                .buttonStyle(.borderless)
+                .foregroundStyle(state.listening ? Color.red : Color.secondary)
+                .disabled(state.mode == .call)
+                .help(state.mode == .call ? "Asking by voice is off in call mode: the call would hear you"
+                      : state.listening ? "Listening. Stops by itself when you pause, or click to finish"
+                      : "Ask by voice  (⌥V)")
             Button("Catch me up", action: state.catchUp)
                 .keyboardShortcut("k", modifiers: [.command])
                 .help("What did I miss?  (⌥C)")
