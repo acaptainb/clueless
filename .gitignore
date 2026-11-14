@@ -1,0 +1,24 @@
+# Models and third-party checkouts are never committed
+vendor/
+models/
+*.gguf
+*.mlmodelc
+*.mlpackage
+*.safetensors
+
+# Xcode / Swift
+.build/
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+
+# Runtime output
+*.jsonl
+snapshots/
+.DS_Store
+.run/
+sessions/
+smoke/*.wav
+smoke/*.m4a
