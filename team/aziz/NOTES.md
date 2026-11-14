@@ -14,6 +14,9 @@ T08 is written and waiting for the Mac mini (below). Next engine tasks by payoff
 - Two sessions shared this laptop checkout on Sat night: T08 was written in the git worktree `.worktrees/t08`, T26 in the main folder.
 
 - `aziz/demo-assets` (T21). The audio script (`scripts/make_demo_assets.py`) has never run: likeliest problems are the `say -v ?` voice-list parsing and missing voices. Page 2 of the PDF was only seen as a thumbnail. T04 (answer quality) uses `demo/*/questions.json` once the audio exists.
+- `aziz/servers-one` is the tip of a stack: `aziz/prompt-cache` (T09), `aziz/word-cut` (T19), `aziz/call-notes` (T13 to T15), `aziz/test-set` (T10), `aziz/servers-one` (T27), with `main` merged in. Never compiled. One `check.sh aziz/servers-one` tests all of it; `clueless-bench selftest` checks the logic with no servers. Riskiest: the SpeakerKit calls in `Speakers.swift` (written from the SDK source at 1.1.1) and the new prompt order (`CLUELESS_PROMPT_LAYOUT=classic` reverts it without a rebuild).
+- Still open after that: T04 (needs the Mac mini and T21 assets), the real-audio half of T10, and wiring `SessionNotes.make` and `SessionAudio` into `AppState.swift` (asked of Yusuf in the work log).
+- The laptop clock is Pacific and `TZ=America/New_York date` prints UTC in Git Bash. Eastern time = laptop time + 3 hours.
 
 ## Ideas and things to remember
 
