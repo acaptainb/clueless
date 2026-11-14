@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 7:05 pm ET by Aziz
+Last updated: Sat Nov 14, 6:26 pm ET by Aziz
 
 ## People
 
@@ -158,7 +158,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 | ID | Task | Suggested |
 |---|---|---|
 | T20 | Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | Yusuf |
-| T21 | Demo assets, stored locally: a lecture video, a PDF paper, a 2 to 3 minute multi-speaker call | Aziz |
 | T22 | Decide how each person reaches the Mac mini from their laptop (in person, or turn on Remote Login / Screen Sharing) so tests can be started without waiting | both |
 | T23 | Record the demo video, under 2 minutes | both |
 | T24 | Final README and the Discord submission | both |
@@ -177,6 +176,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 | Task | Who | When | Where |
 |---|---|---|---|
 | T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |
+| T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Being written on the Windows laptop; the audio is built on the Mac mini |
 | Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
 | Team tracking: STATUS.md, WORKLOG.md, workflow rules | Aziz | Sat 5:25 pm | `main` |
 | Answers stream into the card (first words in 0.8 s) | Aziz | Sat 4:58 pm | PR #1 |
