@@ -32,14 +32,14 @@ func runSelftest() {
     // T09: the timeline window starts at the same line for requests a few seconds apart.
     let tl = Timeline()
     for i in 0..<40 { tl.append(.them, "line \(i + 1)", speaker: "Maya", at: base.addingTimeInterval(Double(i) * 5)) }
-    let first = tl.recent(seconds: 100, maxLines: 60, now: base.addingTimeInterval(205))
-    let second = tl.recent(seconds: 100, maxLines: 60, now: base.addingTimeInterval(212))
+    let first = tl.recent(seconds: 100, maxLines: 60, step: 60, now: base.addingTimeInterval(205))
+    let second = tl.recent(seconds: 100, maxLines: 60, step: 60, now: base.addingTimeInterval(212))
     t.check("recent: same first line 7 s later", first.first?.id == 13 && second.first?.id == 13,
             "first ids \(first.first?.id ?? -1) and \(second.first?.id ?? -1), expected 13")
     t.check("recent: newest line included", first.last?.id == 40 && second.last?.id == 40)
-    let exact = tl.recent(seconds: 100, maxLines: 60, step: 0, now: base.addingTimeInterval(205))
-    t.check("recent: step 0 gives the exact window", exact.first?.id == 22, "first id \(exact.first?.id ?? -1), expected 22")
-    let capped = tl.recent(seconds: 100, maxLines: 20, now: base.addingTimeInterval(205))
+    let exact = tl.recent(seconds: 100, maxLines: 60, now: base.addingTimeInterval(205))
+    t.check("recent: the default is the exact window", exact.first?.id == 22, "first id \(exact.first?.id ?? -1), expected 22")
+    let capped = tl.recent(seconds: 100, maxLines: 20, step: 60, now: base.addingTimeInterval(205))
     t.check("recent: cap trims to a multiple of 10", capped.first?.id == 30 && capped.count == 11,
             "first id \(capped.first?.id ?? -1), count \(capped.count), expected 30 and 11")
 

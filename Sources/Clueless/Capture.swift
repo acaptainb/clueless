@@ -13,6 +13,14 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     var onAudio: ((Source, [Float]) -> Void)?
     var onStop: ((Error?) -> Void)?
 
+    /// When the stream last delivered a buffer of any kind. Read by the stall watchdog.
+    var lastBufferAt: Date {
+        get { stampLock.lock(); defer { stampLock.unlock() }; return stamp }
+        set { stampLock.lock(); stamp = newValue; stampLock.unlock() }
+    }
+    private let stampLock = NSLock()
+    private var stamp = Date.distantPast
+
     private var stream: SCStream?
     private var display: SCDisplay?
     private var ownApp: SCRunningApplication?
@@ -45,6 +53,7 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
         if microphone { try stream.addStreamOutput(self, type: .microphone, sampleHandlerQueue: queue) }
         try await stream.startCapture()
         self.stream = stream
+        lastBufferAt = Date()
     }
 
     func stop() async {
@@ -68,6 +77,7 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     // MARK: SCStreamOutput
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
+        lastBufferAt = Date()   // any buffer, video included, shows the stream is alive
         let source: Source
         switch type {
         case .audio: source = .system
@@ -78,7 +88,11 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
         onAudio?(source, samples)
     }
 
-    func stream(_ stream: SCStream, didStopWithError error: Error) { onStop?(error) }
+    func stream(_ stream: SCStream, didStopWithError error: Error) {
+        // Ignore a late report from a stream that has already been replaced.
+        guard self.stream == nil || stream === self.stream else { return }
+        onStop?(error)
+    }
 
     // MARK: conversion
 
