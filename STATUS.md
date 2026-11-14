@@ -4,14 +4,14 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 5:50 pm ET by Aziz
+Last updated: Sat Nov 14, 6:00 pm ET by Aziz
 
 ## People
 
 | Person | GitHub | Codes on | Role | Branch prefix | Notes folder |
 |---|---|---|---|---|---|
-| Aziz | `acaptainb` | Windows laptop (cannot build or run the app). Also the person usually at the Mac mini | B, the engine (proposed, confirm) | `aziz/` | `team/aziz/` |
-| Yusuf | (fill in) | Laptop. Coding only | A, the app (proposed, confirm) | `yusuf/` | `team/yusuf/` |
+| Aziz | `acaptainb` | Windows laptop (cannot build or run the app). Also the person usually at the Mac mini | B, the engine, and Mac mini runner | `aziz/` | `team/aziz/` |
+| Yusuf | `yusuf-2007` | MacBook, M2. Can compile Swift as an error check; cannot run the models or the app | A, the app | `yusuf/` | `team/yusuf/` |
 
 All work before Sat 5:50 pm was done by Aziz at the Mac mini.
 
@@ -42,7 +42,9 @@ queue: runs `check.sh` on queued branches, does the live tests, merges what pass
 
 ## Machines
 
-**Laptops are for writing code only. Nothing is built, run or tested on a laptop.**
+**Laptops are for writing code only. Nothing is run or tested on a laptop.** One exception: Yusuf's MacBook
+may run `swift build` to catch compile errors before pushing. That is an error check, not a test; the
+Mac mini result is the only one that counts.
 
 **The Mac mini is the only build and test machine** ("James's Mac Mini", M6, 32 GB, macOS 27).
 - Checkout: `/Users/captain/clueless`. It holds everything that is not in git: `models/`, `vendor/llama.cpp`,

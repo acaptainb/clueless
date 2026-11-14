@@ -12,8 +12,10 @@ History of finished work is in WORKLOG.md. Measurements are in BENCHMARKS.md.
 
 ## Where code runs
 
-- **Laptops are for writing code only.** Do not build, run, test, install models or start servers on a
-  laptop. Aziz's laptop runs Windows and cannot build the app at all; do not try.
+- **Laptops are for writing code only.** Do not run, test, install models or start servers on a laptop.
+  - Aziz's laptop runs Windows and cannot build the app at all; do not try.
+  - Yusuf's MacBook (M2) may run `swift build -c release` before pushing, to catch compile errors. Do
+    that every time. It must not run the models, the servers or the app.
 - **The Mac mini is the only build and test machine.** Its checkout at `/Users/captain/clueless` holds the
   models, the llama.cpp fork and the app's permissions. See "Machines" in STATUS.md.
 - On a laptop, "done coding" means: pushed to your branch and added to the "Mac mini test queue" in
