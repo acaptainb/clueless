@@ -26,6 +26,20 @@ public struct BonsaiStats: Sendable {
     public var promptTokens: Int = 0
     public var outputTokens: Int = 0
     public var tokensPerSecond: Double = 0
+    /// Prompt tokens the server reused from its cache instead of evaluating again (0 if it does not report this).
+    /// `promptTokens` counts only the ones it had to evaluate.
+    public var cachedTokens: Int = 0
+    /// Time the server spent evaluating the prompt, before the first output token.
+    public var promptSeconds: Double = 0
+
+    /// Fill in from the `timings` object of a llama.cpp server response.
+    mutating func read(timings tm: [String: Any]) {
+        promptTokens = (tm["prompt_n"] as? Int) ?? 0
+        cachedTokens = (tm["cache_n"] as? Int) ?? 0
+        outputTokens = (tm["predicted_n"] as? Int) ?? 0
+        tokensPerSecond = (tm["predicted_per_second"] as? Double) ?? 0
+        promptSeconds = ((tm["prompt_ms"] as? Double) ?? 0) / 1000
+    }
 }
 
 /// Minimal client for the llama.cpp OpenAI-compatible server. Localhost only.
@@ -38,6 +52,8 @@ public struct BonsaiClient: Sendable {
     public enum Content {
         case text(String)
         case textAndImage(String, pngOrJpeg: Data)
+        /// Text, then the image, then more text. Keeps the text before the image reusable from the server's cache.
+        case textImageText(String, pngOrJpeg: Data, String)
     }
 
     public func isUp() async -> Bool {
@@ -59,12 +75,22 @@ public struct BonsaiClient: Sendable {
                 ["type": "image_url", "image_url": ["url": "data:\(mime);base64,\(data.base64EncodedString())"]],
                 ["type": "text", "text": s],
             ]
+        case .textImageText(let before, let data, let after):
+            let mime = data.starts(with: [0xFF, 0xD8]) ? "image/jpeg" : "image/png"
+            let parts: [[String: Any]] = [
+                ["type": "text", "text": before],
+                ["type": "image_url", "image_url": ["url": "data:\(mime);base64,\(data.base64EncodedString())"]],
+                ["type": "text", "text": after],
+            ]
+            userContent = parts
         }
         var body: [String: Any] = [
             "messages": [["role": "system", "content": system], ["role": "user", "content": userContent]],
             "max_tokens": thinking ? max(maxTokens, 8192) : maxTokens,
             "chat_template_kwargs": ["enable_thinking": thinking],
             "top_k": 20,
+            // Reuse the evaluated prefix of the previous request (the default on current servers; stated so it is certain).
+            "cache_prompt": true,
             // Sampling from the model card. presence_penalty is lowered for JSON: 1.5 fights repeated keys/quotes.
             "temperature": thinking ? 1.0 : (json ? 0.3 : 0.7),
             "top_p": thinking ? 0.95 : 0.8,
@@ -100,11 +126,7 @@ public struct BonsaiClient: Sendable {
                     text += piece
                     onPartial(text)
                 }
-                if let tm = obj["timings"] as? [String: Any] {
-                    stats.promptTokens = (tm["prompt_n"] as? Int) ?? 0
-                    stats.outputTokens = (tm["predicted_n"] as? Int) ?? 0
-                    stats.tokensPerSecond = (tm["predicted_per_second"] as? Double) ?? 0
-                }
+                if let tm = obj["timings"] as? [String: Any] { stats.read(timings: tm) }
             }
             stats.seconds = Date().timeIntervalSince(t0)
             return (text, stats)
@@ -120,11 +142,7 @@ public struct BonsaiClient: Sendable {
                 "Bonsai server on port \(port) returned: \(String(data: data.prefix(300), encoding: .utf8) ?? "?")"])
         }
         var stats = BonsaiStats(seconds: Date().timeIntervalSince(t0))
-        if let tm = obj["timings"] as? [String: Any] {
-            stats.promptTokens = (tm["prompt_n"] as? Int) ?? 0
-            stats.outputTokens = (tm["predicted_n"] as? Int) ?? 0
-            stats.tokensPerSecond = (tm["predicted_per_second"] as? Double) ?? 0
-        }
+        if let tm = obj["timings"] as? [String: Any] { stats.read(timings: tm) }
         return (content, stats)
     }
 }
@@ -234,20 +252,44 @@ public struct Card: Sendable {
     }
 }
 
+/// How the answerer's request is laid out. The server reuses the longest part of the prompt that is identical
+/// to the start of the previous request, so the order decides how much it has to evaluate again.
+public enum PromptLayout: String, Sendable, CaseIterable {
+    /// The original order: task instructions in the system prompt, image first. Asking a question after a
+    /// catch-up (or attaching a new screenshot) makes the server evaluate nearly the whole prompt again.
+    case classic
+    /// What stays the same comes first: one system prompt for every task, then the timeline (it only grows at
+    /// its end), then what changes per request: image, screen text, question, task instructions.
+    case stable
+
+    /// `CLUELESS_PROMPT_LAYOUT=classic` switches back without a rebuild.
+    public static let current: PromptLayout = {
+        PromptLayout(rawValue: ProcessInfo.processInfo.environment["CLUELESS_PROMPT_LAYOUT"] ?? "") ?? .stable
+    }()
+}
+
 /// How the screen reaches the model. This is one of the things we benchmark.
 /// `auto` = OCR text always, screenshot only when `ScreenPolicy` says the question needs it.
 public enum ScreenMethod: String, Sendable, CaseIterable { case ocr, image, both, none, auto }
 
 public struct Answerer: Sendable {
     public let client: BonsaiClient
-    public init(client: BonsaiClient = BonsaiClient(port: BonsaiClient.answererPort)) { self.client = client }
+    public let layout: PromptLayout
+    public init(client: BonsaiClient = BonsaiClient(port: BonsaiClient.answererPort), layout: PromptLayout = .current) {
+        self.client = client; self.layout = layout
+    }
+
+    /// The part of the system prompt that is the same for every task.
+    static var commonSystem: String { Prompts.load("answerer_common") ?? builtInCommon }
+    /// The instructions for one task (question, catch-up or notes).
+    static func taskInstructions(_ task: AnswerTask) -> String {
+        Prompts.load("answerer_" + task.rawValue) ?? builtInTask(task)
+    }
 
     /// Live text: prompts/answerer_common.txt plus prompts/answerer_<task>.txt, joined by one newline.
     /// The built-in copies below are only used when those files cannot be read.
     static func system(_ task: AnswerTask) -> String {
-        let common = Prompts.load("answerer_common") ?? builtInCommon
-        let part = Prompts.load("answerer_" + task.rawValue) ?? builtInTask(task)
-        return common + "\n" + part
+        commonSystem + "\n" + taskInstructions(task)
     }
 
     static let builtInCommon = """
@@ -286,20 +328,33 @@ public struct Answerer: Sendable {
     public func answer(_ task: AnswerTask, lines: [TimelineLine], screenText: String, image: Data? = nil,
                        question: String? = nil, userName: String = "", thinking: Bool = false,
                        onPartial: (@Sendable (Card) -> Void)? = nil) async throws -> Card {
-        var prompt = ""
-        if !userName.isEmpty { prompt += "User name: \(userName)\n\n" }
-        prompt += "TIMELINE (newest last):\n" + (lines.isEmpty ? "(nothing said yet)" : lines.rendered) + "\n\n"
-        if !screenText.isEmpty { prompt += "SCREEN TEXT (OCR of the user's current screen):\n\(String(screenText.prefix(4000)))\n\n" }
-        if image != nil { prompt += "The attached image is the user's current screen.\n\n" }
-        if let question { prompt += "QUESTION: \(question)\n" }
-        prompt += "Task: \(task.rawValue)"
+        // `head` only grows at its end from one request to the next (the timeline is append-only), so the
+        // server can reuse it. `tail` is what changes every time.
+        var head = ""
+        if !userName.isEmpty { head += "User name: \(userName)\n\n" }
+        head += "TIMELINE (newest last):\n" + (lines.isEmpty ? "(nothing said yet)" : lines.rendered) + "\n\n"
+        var tail = ""
+        if !screenText.isEmpty { tail += "SCREEN TEXT (OCR of the user's current screen):\n\(String(screenText.prefix(4000)))\n\n" }
+        if image != nil { tail += "The attached image is the user's current screen.\n\n" }
+        if let question { tail += "QUESTION: \(question)\n" }
+        tail += "Task: \(task.rawValue)"
 
-        let content: BonsaiClient.Content = image.map { .textAndImage(prompt, pngOrJpeg: $0) } ?? .text(prompt)
+        let system: String
+        let content: BonsaiClient.Content
+        switch layout {
+        case .classic:
+            system = Self.system(task)
+            if let image { content = .textAndImage(head + tail, pngOrJpeg: image) } else { content = .text(head + tail) }
+        case .stable:
+            system = Self.commonSystem
+            tail += "\n\n" + Self.taskInstructions(task)
+            if let image { content = .textImageText(head, pngOrJpeg: image, tail) } else { content = .text(head + tail) }
+        }
         let valid = Set(lines.map(\.id))
         let stream: (@Sendable (String) -> Void)? = onPartial.map { callback in
             { text in callback(Self.card(task, from: text, validIDs: valid, partial: true)) }
         }
-        let (out, stats) = try await client.chat(system: Self.system(task), user: content,
+        let (out, stats) = try await client.chat(system: system, user: content,
                                                  maxTokens: task == .notes ? 500 : 220, thinking: thinking, json: true,
                                                  onPartial: stream)
         var card = Self.card(task, from: out, validIDs: valid, partial: false)

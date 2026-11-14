@@ -112,7 +112,6 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 |---|---|---|---|---|
 | T07 Start speaking as soon as the first sentence of a card is complete, not after the whole card | Yusuf | `yusuf/speak-early` | Sat 6:40 pm | Written on the MacBook, compile-checked only |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
-| T09 Keep the prompt prefix identical between requests so the server reuses its cache | Aziz | `aziz/prompt-cache` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T19 Forced cut at 8 s can split a word: cut at the quietest point instead | Aziz | `aziz/word-cut` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T13 Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz | `aziz/call-notes` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T14 Resolve speaker names from context | Aziz | `aziz/call-notes` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
@@ -175,6 +174,8 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 7:15 pm | `aziz/word-cut` |
+| T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 7:00 pm | `aziz/prompt-cache` |
 | T05 Look-away trigger (webcam + Vision). `check.sh` PASS and the simulated absence passed on the Mac mini; real head-turn test and tuning deferred to T28 | Yusuf | Sat 6:45 pm | PR #3 |
 | T17 Capture restarts itself after a stream error or a 15 s stall. `check.sh` PASS, no false restart in silence; the restart itself has not fired yet, deferred to T28 | Yusuf | Sat 6:45 pm | PR #5 |
 | T16 App starts and health-checks the Bonsai servers. `check.sh` PASS; auto-start and restart after a kill verified on the Mac mini; panel row and Restart button deferred to T28 | Yusuf | Sat 6:45 pm | PR #4 |
