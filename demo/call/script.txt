@@ -1,4 +1,4 @@
-# Demo call for call mode: three people plus the user. About 2 minutes 15 seconds when spoken.
+# Demo call for call mode: three people plus the user. About 2 minutes when spoken.
 #
 # Format, read by scripts/make_demo_assets.py:
 #   Speaker: text        one spoken line; each speaker gets a different voice

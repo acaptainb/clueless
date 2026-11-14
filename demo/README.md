@@ -6,7 +6,7 @@ professor, the meeting and the experiment numbers are made up.
 
 | Asset | Files | Used for |
 |---|---|---|
-| Multi-speaker call, about 2 min 15 s | `call/script.txt` → `call/call.wav` | Call mode: name trigger, catch-up card, speaker names, session notes |
+| Multi-speaker call, about 2 min | `call/script.txt` → `call/call.wav` | Call mode: name trigger, catch-up card, speaker names, session notes |
 | Narrated slide lecture, about 3 min | `lecture/slides.html`, `lecture/narration.txt` → `lecture/audio/` | Study mode with a lecture on screen |
 | PDF paper, 2 pages | `paper/learning-rate-note.pdf` | Study mode with a document on screen |
 
@@ -48,8 +48,8 @@ through system audio).
 
 | Time | What happens | What it shows |
 |---|---|---|
-| about 1:10 | Maya: "Yusuf, can your team still hit Friday for the release candidate?" then 8 s of silence | Name trigger: a catch-up card with the question, what was missed, a suggested reply. Answer out loud; the microphone line shows as "You" |
-| about 1:35 | Priya: "Yusuf, who should review the release notes?" then 8 s of silence | A second trigger |
+| about 1:15 | Maya: "Yusuf, can your team still hit Friday for the release candidate?" then 8 s of silence | Name trigger: a catch-up card with the question, what was missed, a suggested reply. Answer out loud; the microphone line shows as "You" |
+| about 1:40 | Priya: "Yusuf, who should review the release notes?" then 8 s of silence | A second trigger |
 | end | Press "Session notes" | Notes by speaker with names worked out from "Go ahead, Sam", "Thanks, Priya", "Got it, Maya" |
 
 The times are estimates until the audio is built; `call/call_timeline.json` has the real ones.

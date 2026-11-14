@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the demo audio on the Mac mini from the scripts in demo/.
 
-    python3 scripts/make_demo_assets.py [--user Yusuf] [--rate 180]
+    python3 scripts/make_demo_assets.py [--user Yusuf] [--rate 165]
 
 Uses only macOS `say` and `afconvert` plus the Python standard library. Nothing is downloaded and no
 language model is involved (`say` is the system speech synthesizer).
@@ -161,7 +161,7 @@ def build_lecture(words_per_minute, available, tmp):
 def main():
     parser = argparse.ArgumentParser(description="Build the demo audio from demo/ with the system voices.")
     parser.add_argument("--user", default="Yusuf", help="name the call addresses; must match 'Your name' in the app")
-    parser.add_argument("--rate", type=int, default=180, help="speaking rate in words per minute")
+    parser.add_argument("--rate", type=int, default=165, help="speaking rate in words per minute")
     args = parser.parse_args()
     if sys.platform != "darwin":
         sys.exit("this needs macOS (`say` and `afconvert`); run it on the Mac mini")
