@@ -53,6 +53,8 @@ final class SpeechQueue {
     func update(_ spoken: String, final: Bool) -> Bool {
         guard let piece = splitter.next(spoken, final: final) else { return false }
         pending.append(piece)
+        // One line per piece, so order and repeats can be checked from the log without listening.
+        Log.write("[speech] queued\(final ? " (last)" : ""): \(piece)")
         if worker == nil { startWorker() }
         return true
     }
