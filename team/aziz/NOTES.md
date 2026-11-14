@@ -13,6 +13,8 @@ T08 is written and waiting for the Mac mini (below). Next engine tasks by payoff
 - `aziz/screenshot-cost` (T08 engine) and `aziz/screenshot-cost-app` (T08 app wiring, stacked on it). Never compiled. Likeliest build errors: the tuple array `variants` and the trailing closure `{ _ in }` in `Sources/clueless-bench/ScreenCost.swift`; `Task.detached` capturing `shot` in `AppState.run`. After the bench: set `ScreenPolicy.imageMaxSide` to the smallest size that keeps `both` at 6/6, write the table into BENCHMARKS.md, then move T08 to Done in the PR. If `auto` misses a question, add its word to `visualStems` in `ScreenInput.swift`.
 - Two sessions shared this laptop checkout on Sat night: T08 was written in the git worktree `.worktrees/t08`, T26 in the main folder.
 
+- `aziz/demo-assets` (T21). The audio script (`scripts/make_demo_assets.py`) has never run: likeliest problems are the `say -v ?` voice-list parsing and missing voices. Page 2 of the PDF was only seen as a thumbnail. T04 (answer quality) uses `demo/*/questions.json` once the audio exists.
+
 ## Ideas and things to remember
 
 - This Windows laptop has no Swift and no Python; Node is installed. Git name and email were unset here and are now set for this repo only.

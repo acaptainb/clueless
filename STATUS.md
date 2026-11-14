@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 11:30 pm ET by Aziz
+Last updated: Sat Nov 14, 6:31 pm ET by Aziz
 
 ## People
 
@@ -60,15 +60,17 @@ Code is not done until it has passed on the Mac mini. After pushing a branch, ad
 STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
 once the PR is merged.
 
-Mac mini in use right now by: nobody
+Mac mini in use right now by: Yusuf (his three queued branches, run by the Mac mini session, from Sat 6:25 pm)
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
 | `yusuf/look-away` | Yusuf | T05. `check.sh yusuf/look-away app`, Call or Study mode, something playing. (1) Camera prompt appears; allow it; eye icon shows in the header. (2) Turn your head away or leave for 10 s while audio plays, look back: a "While you looked away" card appears within about 1 s of returning. (3) A 1 to 2 s glance away does nothing. (4) Look away with silence: no card. (5) Pause capture: camera light goes off. If it fires too easily or not at all, note it: the angle (`maxAngle`) and timing (`awayAfter`) in `Presence.swift` need tuning on the real webcam. No-person check: launch with `CLUELESS_AUDIO_FILE=<wav> CLUELESS_TEST_LOOKAWAY=20` and a card should appear about 50 s in | not run yet |
 | `yusuf/capture-restart` | Yusuf | T17. `check.sh yusuf/capture-restart app`, play a lecture. (1) IMPORTANT, check first: leave the Mac silent for 60 s. The transcript must stay "Listening" with no "Capture restarted" lines in `.run/app.log`. If it restarts in silence, the stream sends no buffers when quiet and the 15 s stall check (`captureStallSeconds` in `CaptureRestart.swift`) must be raised or removed. (2) Put the display to sleep for 20 s and wake it, or unplug and replug the monitor: status shows "Restarting", then "Listening" again, and the transcript continues. (3) Click the screen-sharing icon in the menu bar and stop sharing: the app goes to paused and does NOT restart. (4) Press pause: stays paused. (5) Switch Study to Call and back: still listening | not run yet |
 | `yusuf/server-health` | Yusuf | T16. `check.sh yusuf/server-health app`. (1) With the servers stopped (`servers.sh stop`), launch the app: an orange row says it is starting the servers, it clears in about 20 s, both HUD dots go green, a question works. (2) While the app runs, `kill $(cat .run/answerer.pid)`: within about 5 s the row appears and the servers restart by themselves; a question asked meanwhile gets a "still starting" card, not a hang. (3) `kill $(cat .run/watcher.pid)` only: the row says the watcher is down and offers Restart; nothing restarts until the button is pressed; questions still work. (4) Ask a long question and confirm the servers are NOT restarted while it is answering | not run yet |
+| `aziz/engine-combined` | Aziz | RUN THIS FIRST, it replaces the two Aziz rows below: T26 + T08 engine + T08 app wiring + `main`, merged with no code conflicts. One `check.sh aziz/engine-combined app` builds all of it; then do the T26 steps and the T08 steps (2) to (6) from the rows below against this branch. If it passes, merge this branch and drop the three separate ones. If the build fails, the error file tells which task: `Prompts.swift` or `loadCases` is T26, `ScreenInput.swift` or `ScreenCost.swift` is T08 | not run yet |
 | `aziz/prompts-data` | Aziz | T26. Engine only, so `check.sh aziz/prompts-data` is the whole test; it was written on Windows and has never been compiled, so expect to paste build errors back. (1) Build ok and PASS with the same scores as `main` (questions 10/10, watcher 15 or 16 of 16, catch-up 2 or 3 of 3). (2) The answer output has a line `== prompts: all 5 from prompts/*.txt`. If it says BUILT-IN, the files are not being found. (3) In `.worktrees/check`, `.build/release/clueless-bench prompts` prints five lines that all end "same as built-in". (4) Optional: add the word TEST to the end of `.worktrees/check/prompts/watcher.txt`, run `clueless-bench prompts` again and see "differs from built-in" with no rebuild, then `git -C .worktrees/check checkout prompts` | not run yet |
 | `aziz/screenshot-cost`, then `aziz/screenshot-cost-app` | Aziz | T08. Written on Windows, never compiled. (1) `check.sh aziz/screenshot-cost`. (2) Measure: `cd .worktrees/check && .build/release/clueless-bench screencost smoke/shot.png`. Expect `policy: 17/17`, and the `auto` rows at 6/6 with a first-token time close to the `ocr` row (1 image sent out of 6). Paste the table into BENCHMARKS.md. (3) Real full-screen capture: show `smoke/shot.png` full screen, `screencapture -x .run/full.png`, run the bench again on `.run/full.png`. (4) Pick the smallest size whose `both` row is still 6/6 and set it as the default in `ScreenPolicy.imageMaxSide` (`Sources/CluelessCore/ScreenInput.swift`). (5) Optional: restart the servers with `ANSWERER_IMAGE_MAX_TOKENS=256` and rerun; if the fork rejects `--image-max-tokens` the answerer will not start, so unset it. (6) `check.sh aziz/screenshot-cost-app app` (the app wiring, 2 files in `Sources/Clueless/`): the menu shows "Auto" selected; "when is the homework due" answers in about 1 to 2 s and the log line says `image 0 bytes`; "what does the diagram show" attaches the image. Both branches touch one line each in `Bonsai.swift` and `main.swift` that T26 also edits nearby: merge T26 first | not run yet |
+| `aziz/demo-assets` | Aziz | T21. No Swift changed, so the build cannot break; this is about the audio. (1) In the branch checkout: `python3 scripts/make_demo_assets.py --user Yusuf`. It should print three different call voices and write `demo/call/call.wav` (about 2 min), six `demo/lecture/audio/slideN.wav` and `demo/lecture/lecture.wav` (about 3 min). If it says not enough English voices, install two more in System Settings > Accessibility > Spoken Content. (2) `afplay demo/call/call.wav`: three clearly different voices, 8 s of silence after each question to the user. (3) Open `demo/lecture/slides.html` full screen, press Start: narration plays and the slides advance by themselves. (4) Open `demo/paper/learning-rate-note.pdf`: page 2 has a chart with three coloured curves. (5) With the app running, try the questions in `demo/README.md` (that part is T04) | not run yet |
 
 ## Milestones
 
@@ -112,7 +114,14 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T05 Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf | `yusuf/look-away` | Sat 5:45 pm | Written on the MacBook, compile-checked only; needs a live Mac mini test with the webcam |
 | T16 App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf | `yusuf/server-health` | Sat 5:50 pm | Written on the MacBook, compile-checked only |
 | T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
-| T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 11:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
+| T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
+| T09 Keep the prompt prefix identical between requests so the server reuses its cache | Aziz | `aziz/prompt-cache` | Sat 6:40 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T19 Forced cut at 8 s can split a word: cut at the quietest point instead | Aziz | `aziz/word-cut` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T13 Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T14 Resolve speaker names from context | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T15 End-of-session notes by speaker, using the names | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T10 Grow the test set to about 20 questions | Aziz | `aziz/test-set` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T27 `servers.sh start answerer` / `start watcher`: start or stop one server alone (asked for by Yusuf for T16) | Aziz | `aziz/servers-one` | Sat 8:20 pm | Written on the Windows laptop, not run; stacked on `aziz/test-set` |
 
 ## Up next
 
@@ -135,18 +144,12 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### Performance (the main focus)
 | ID | Task | Suggested |
 |---|---|---|
-| T09 | Keep the prompt prefix identical between requests so the server reuses its cache; measure prompt time | Aziz |
-| T10 | Grow the test set to about 20 questions and add real recorded audio, not only synthetic speech | Aziz |
-| T19 | The forced cut at 8 s can split a word across two lines: overlap chunks or cut at a word boundary | Aziz |
 
 ### M3 Call mode
 | ID | Task | Suggested |
 |---|---|---|
 | T11 | Live test of call mode: microphone = You, system audio = Them (needs Microphone permission) | Yusuf |
 | T12 | Name trigger through the watcher, live: saying the user's name produces a catch-up card | Yusuf |
-| T13 | Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz |
-| T14 | Resolve speaker names from context ("thanks, Priya") | Aziz |
-| T15 | End-of-session notes by speaker, using the names | Aziz |
 
 ### Reliability
 | ID | Task | Suggested |
@@ -157,7 +160,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 | ID | Task | Suggested |
 |---|---|---|
 | T20 | Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | Yusuf |
-| T21 | Demo assets, stored locally: a lecture video, a PDF paper, a 2 to 3 minute multi-speaker call | Aziz |
 | T22 | Decide how each person reaches the Mac mini from their laptop (in person, or turn on Remote Login / Screen Sharing) so tests can be started without waiting | both |
 | T23 | Record the demo video, under 2 minutes | both |
 | T24 | Final README and the Discord submission | both |
@@ -183,6 +185,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 | T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 7:15 pm | `aziz/word-cut` |
 | T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 7:00 pm | `aziz/prompt-cache` |
 | T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |
+| T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Written on the Windows laptop. Slides and PDF checked in a browser there; the audio script has never been run |
 | Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
 | Team tracking: STATUS.md, WORKLOG.md, workflow rules | Aziz | Sat 5:25 pm | `main` |
 | Answers stream into the card (first words in 0.8 s) | Aziz | Sat 4:58 pm | PR #1 |
