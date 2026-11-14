@@ -15,7 +15,7 @@ public enum Prompts {
         return URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
     }()
 
-    public static let names = ["watcher", "answerer_common", "answerer_question", "answerer_catch_up", "answerer_notes"]
+    public static let names = ["watcher", "answerer_common", "answerer_question", "answerer_catch_up", "answerer_notes", "names"]
 
     /// Text of `prompts/<name>.txt`, or nil when the file is missing or empty.
     /// Windows line endings and a byte-order mark (Notepad adds one) are removed.
@@ -36,6 +36,7 @@ public enum Prompts {
         case "answerer_question": return Answerer.builtInTask(.question)
         case "answerer_catch_up": return Answerer.builtInTask(.catchUp)
         case "answerer_notes": return Answerer.builtInTask(.notes)
+        case "names": return NameResolver.builtInSystem
         default: return ""
         }
     }

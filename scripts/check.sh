@@ -24,6 +24,8 @@ if ! swift build -c release > "$ROOT/.run/check-build.log" 2>&1; then
   echo "FAIL $BR @ $SHA: build failed (full log: .run/check-build.log)" | tee -a "$LOG"; exit 1
 fi
 echo "build ok"
+# Logic checks that need no servers or models. Shown, not part of the gate.
+.build/release/clueless-bench selftest 2>&1 | grep -E '^FAIL|^== selftest' | cut -c1-200
 
 # Servers and models always come from the main checkout.
 curl -sf http://127.0.0.1:8080/health >/dev/null && curl -sf http://127.0.0.1:8082/health >/dev/null \
