@@ -1,0 +1,42 @@
+{
+  "about": "What a good run on demo/call/script.txt produces. Keywords are lower case; 'a|b' means either.",
+  "speakers": ["Maya", "Sam", "Priya"],
+  "name_clues": [
+    {"says": "Maya", "line": "Go ahead, Sam.", "names": "Sam", "who": "the next speaker"},
+    {"says": "Sam", "line": "Not for the submission itself, Priya", "names": "Priya", "who": "the previous speaker"},
+    {"says": "Maya", "line": "Thanks, Priya.", "names": "Priya", "who": "the previous speaker"},
+    {"says": "Sam", "line": "Got it, Maya.", "names": "Maya", "who": "the previous speaker"}
+  ],
+  "questions_to_user": [
+    {
+      "line": "can your team still hit Friday for the release candidate, given the push notification bug?",
+      "asked": ["friday", "release candidate"],
+      "missed_any": ["push", "tablet|january", "migration|thursday"]
+    },
+    {
+      "line": "who should review the release notes before I send them?",
+      "asked": ["release notes", "review"],
+      "missed_any": ["friday", "wednesday", "thursday"]
+    }
+  ],
+  "notes": {
+    "decisions": [
+      ["migration", "thursday", "ten|10"],
+      ["tablet", "january"],
+      ["eight thousand|8,000|8000", "ads"],
+      ["release candidate", "friday"]
+    ],
+    "actions": [
+      {"owner": "Sam", "what": ["migration"]},
+      {"owner": "Sam", "what": ["push", "wednesday"]},
+      {"owner": "Priya", "what": ["store listing|listing", "thursday"]}
+    ],
+    "facts": [
+      ["one in five|1 in 5|20"],
+      ["forty|40", "minutes"],
+      ["twelve thousand|12,000|12000"],
+      ["six languages|6 languages"]
+    ],
+    "next_meeting": ["thursday", "nine|9"]
+  }
+}

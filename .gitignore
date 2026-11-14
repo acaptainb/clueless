@@ -23,3 +23,9 @@ sessions/
 smoke/*.wav
 smoke/*.m4a
 .worktrees/
+
+# Demo audio is generated on the Mac mini by scripts/make_demo_assets.py
+demo/**/*.wav
+demo/call/call_timeline.json
+demo/lecture/lecture_ref.txt
+demo/local/

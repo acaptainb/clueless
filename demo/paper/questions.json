@@ -1,0 +1,13 @@
+[
+  {"q": "Which learning rate gave the lowest validation loss?", "expect": ["0.01"], "from": "screen", "page": 1},
+  {"q": "What was the lowest validation loss?", "expect": ["0.27"], "from": "screen", "page": 1},
+  {"q": "How many epochs did a learning rate of 0.001 need?", "expect": ["96"], "from": "screen", "page": 1},
+  {"q": "What batch size did they use?", "expect": ["64"], "from": "screen", "page": 1},
+  {"q": "How many hidden units does the network have?", "expect": ["128"], "from": "screen", "page": 1},
+  {"q": "When does a run count as converged?", "expect": ["0.001", "five|5"], "from": "screen", "page": 1},
+  {"q": "What happened at a learning rate of 1.0?", "expect": ["diverge"], "from": "screen", "page": 1},
+  {"q": "Why is 0.1 worse than 0.01 even though it converges faster?", "expect": ["higher loss|0.34|too large"], "from": "screen", "page": 1},
+  {"q": "In the figure, which curve diverges?", "expect": ["red|1.0"], "from": "visual", "page": 2},
+  {"q": "What should I do if the loss goes up in the first epoch?", "expect": ["divide|reduce|lower", "ten|10"], "from": "screen", "page": 2},
+  {"q": "What are the limitations of this note?", "expect": ["one|small|single", "adam|optimizer|schedule|dataset|network"], "from": "screen", "page": 2}
+]
