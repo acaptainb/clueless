@@ -1,0 +1,36 @@
+# Demo call for call mode: three people plus the user. About 2 minutes 15 seconds when spoken.
+#
+# Format, read by scripts/make_demo_assets.py:
+#   Speaker: text        one spoken line; each speaker gets a different voice
+#   [pause N]            N seconds of silence (room for the user to answer out loud in the live demo)
+#   {USER}               replaced by the user's name (--user, default Yusuf); it must match "Your name" in the app
+#
+# What the call is built to show:
+#   - names can be worked out from context ("Go ahead, Sam", "Thanks, Priya", "Got it, Maya")
+#   - two questions are put to the user by name (name trigger, catch-up card)
+#   - decisions, owners, dates and numbers for the end-of-session notes
+# Expected results are in expected.json.
+
+Maya: Okay, let's get started. Thanks for joining, everyone. Today is the go or no-go for the mobile release.
+Sam: Do you want a quick status from engineering first?
+Maya: Go ahead, Sam.
+Sam: The API changes are merged. The one open problem is the push notification service. It is still failing in staging. About one request in five times out.
+Priya: Is that a blocker for the store submission?
+Sam: Not for the submission itself, Priya, but I would not ship with it.
+Maya: Understood. Priya, where are we on the App Store screenshots?
+Priya: Screenshots are done in all six languages. I still need the final copy from marketing, and they promised it by Wednesday.
+Maya: Thanks, Priya. Sam, what about the database migration?
+Sam: It takes about forty minutes, so we need a maintenance window. I would suggest Thursday night.
+Maya: Let's do Thursday at ten p.m. Sam, you own it.
+Sam: Got it, Maya.
+Priya: On budget, we have twelve thousand dollars left for launch ads. I want to spend eight thousand of it in the first week.
+Maya: Approved. And we are cutting the tablet layout from this release. It ships in January.
+Sam: Agreed. That saves about a week of testing.
+[pause 1]
+Maya: {USER}, can your team still hit Friday for the release candidate, given the push notification bug?
+[pause 8]
+Maya: Okay. Then here is the plan. Release candidate on Friday. Sam fixes the push service by Wednesday. Priya sends the store listing on Thursday morning.
+Priya: One more question. {USER}, who should review the release notes before I send them?
+[pause 8]
+Sam: Works for me.
+Maya: Great. Thanks, everyone. We meet again Thursday at nine.

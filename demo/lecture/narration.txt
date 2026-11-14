@@ -1,0 +1,22 @@
+# Narration for demo/lecture/slides.html, one section per slide. About 3 minutes in total.
+# Read by scripts/make_demo_assets.py: each "## slide N" section becomes demo/lecture/audio/slideN.wav.
+# Some facts are only spoken and never shown on a slide (office hours, the rule of thumb, the notes page
+# for the midterm). Those test whether an answer came from the transcript and not from the screen.
+
+## slide 1
+Good afternoon, everyone. Welcome to lecture seven. Today we are going to talk about gradient descent, which is the workhorse of modern machine learning. Before we start, one announcement. My office hours this week move to Tuesday at three, in room two oh four. Now, the plan for today. First the basic idea, then the update rule, then how to choose the learning rate, and finally the stochastic version that everybody actually uses.
+
+## slide 2
+Here is the idea. We have a loss function that measures how wrong our model is, and we want the weights that make that loss as small as possible. Imagine standing on a hillside in thick fog. You cannot see the valley, but you can feel which way the ground slopes under your feet. So you take a step downhill, and then you check again. The gradient points uphill, so we always step the opposite way. This idea is old. Cauchy described it in eighteen forty seven.
+
+## slide 3
+Now let us write that down. This is the update rule. The new weight is the old weight, minus the learning rate times the gradient of the loss. The learning rate is written with the Greek letter eta, and it controls how big each step is. Look at the example at the bottom. The weight is two, the gradient is four, and the learning rate is zero point one. So the step is zero point four, and the new weight is one point six.
+
+## slide 4
+Choosing the learning rate is the most important decision you will make. Look at the three curves. If the learning rate is too small, training works, but it is painfully slow. If it is too large, every step overshoots the valley, and the loss blows up. In the middle, the loss drops quickly and then flattens out. Here is my rule of thumb. Start at zero point zero one. If the loss goes up, divide the learning rate by ten and try again.
+
+## slide 5
+In practice, nobody computes the gradient on the whole dataset. With fifty thousand training examples, one step would be far too expensive. Instead, we estimate the gradient from a small random batch. In our example the batch size is sixty four. That gives seven hundred and eighty two steps per epoch. Each step is noisy, but it is so much cheaper that we get to the valley sooner. This is called stochastic gradient descent, or S G D.
+
+## slide 6
+Let us summarize. Gradient descent walks downhill on the loss. The learning rate sets the step size. And mini batches make each step cheap. Homework three is due on Thursday at eleven fifty nine p m. The midterm is on October twenty third, and it covers lectures one through eight. You may bring one page of handwritten notes. That is all for today. See you on Thursday.
