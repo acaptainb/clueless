@@ -8,6 +8,7 @@ struct OverlayView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
+            if let issue = state.serverIssue { serverRow(issue) }
             transcript
             askBar
             if state.thinking { thinkingRow }
@@ -26,6 +27,15 @@ struct OverlayView: View {
     private var header: some View {
         HStack(spacing: 8) {
             Circle().fill(state.recording ? Color.red : Color.gray).frame(width: 10, height: 10)
+            // Visible whenever the webcam is in use for the look-away trigger.
+            if state.presence != .off {
+                Image(systemName: state.presence == .present ? "eye" : (state.presence == .away ? "eye.slash" : "video.slash"))
+                    .font(.caption)
+                    .foregroundStyle(state.presence == .away ? Color.orange : Color.secondary)
+                    .help(state.presence == .present ? "Webcam on: you are facing the screen"
+                          : state.presence == .away ? "Webcam on: you looked away. Clueless will catch you up when you are back"
+                          : "Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
+            }
             Text(state.recording ? "Recording screen + audio · on this Mac only" : state.status)
                 .font(.caption).foregroundStyle(.secondary).lineLimit(2)
             Spacer()
@@ -34,9 +44,23 @@ struct OverlayView: View {
             }
             .pickerStyle(.segmented).frame(width: 110).labelsHidden()
             .onChange(of: state.mode) { state.modeChanged() }
-            Button(action: state.toggle) { Image(systemName: state.recording ? "pause.fill" : "play.fill") }
-                .buttonStyle(.borderless).help(state.recording ? "Pause capture" : "Resume capture")
+            Button(action: state.toggle) { Image(systemName: state.recording || state.restartingCapture ? "pause.fill" : "play.fill") }
+                .buttonStyle(.borderless).help(state.recording || state.restartingCapture ? "Pause capture" : "Resume capture")
         }
+    }
+
+    // A Bonsai server is down, loading or being started.
+    private func serverRow(_ issue: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            if state.startingServers { ProgressView().controlSize(.small) }
+            else { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange) }
+            Text(issue).font(.caption).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            if state.serverCanRestart { Button("Restart", action: state.restartServers).controlSize(.small) }
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
     }
 
     private var transcript: some View {
@@ -69,6 +93,7 @@ struct OverlayView: View {
             Menu {
                 Button("Session notes", action: state.notes)
                 Toggle("Speak answers", isOn: $state.speak)
+                Toggle("Catch me up when I look away (webcam)", isOn: $state.lookAway)
                 Picker("Screen input", selection: $state.screenMethodRaw) {
                     Text("Auto: screenshot only for visual questions").tag(ScreenMethod.auto.rawValue)
                     Text("Screenshot + OCR text (most accurate)").tag(ScreenMethod.both.rawValue)
