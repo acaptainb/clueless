@@ -64,7 +64,7 @@ Mac mini in use right now by: nobody
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
-| (empty) | | | |
+| `yusuf/look-away` | Yusuf | T05. `check.sh yusuf/look-away app`, Call or Study mode, something playing. (1) Camera prompt appears; allow it; eye icon shows in the header. (2) Turn your head away or leave for 10 s while audio plays, look back: a "While you looked away" card appears within about 1 s of returning. (3) A 1 to 2 s glance away does nothing. (4) Look away with silence: no card. (5) Pause capture: camera light goes off. If it fires too easily or not at all, note it: the angle (`maxAngle`) and timing (`awayAfter`) in `Presence.swift` need tuning on the real webcam. No-person check: launch with `CLUELESS_AUDIO_FILE=<wav> CLUELESS_TEST_LOOKAWAY=20` and a card should appear about 50 s in | not run yet |
 
 ## Milestones
 
