@@ -108,6 +108,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 |---|---|---|---|---|
 | T05 Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf | `yusuf/look-away` | Sat 5:45 pm | Written on the MacBook, compile-checked only; needs a live Mac mini test with the webcam |
 | T16 App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf | `yusuf/server-health` | Sat 5:50 pm | Written on the MacBook, compile-checked only |
+| T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
 
 ## Up next
 
@@ -147,7 +148,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### Reliability
 | ID | Task | Suggested |
 |---|---|---|
-| T17 | Restart capture automatically if the stream stops | Yusuf |
 | T18 | 20-minute soak test: memory, lag and crashes over a long session | both |
 
 ### M5 Ship
