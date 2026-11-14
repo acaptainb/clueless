@@ -5,17 +5,12 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Working on now
 
-T05 look-away trigger, branch `yusuf/look-away`. Code is pushed and compiles. Waiting for the Mac mini.
-
-T16 server health checks, branch `yusuf/server-health`. Code is pushed and compiles. Waiting for the Mac mini.
-
-T17 capture restart, branch `yusuf/capture-restart`. Code is pushed and compiles. Waiting for the Mac mini.
+(nothing claimed) T05, T16, T17 are merged. Next candidates: T06, T07, T20.
 
 ## Pushed, waiting for a Mac mini test
 
-- `yusuf/capture-restart` (T17). Riskiest assumption: audio buffers keep arriving in silence (see WORKLOG). Also edits `AppState.swift` and `OverlayView.swift`, so expect small merge conflicts with the other two branches.
-- `yusuf/server-health` (T16). Both this and `yusuf/look-away` edit `AppState.swift` and `OverlayView.swift` near the same lines; whichever merges second needs `origin/main` merged in and a small conflict fix.
-- `yusuf/look-away` (T05). Likely tuning after the live test: `maxAngle` (0.52 rad) and `awayAfter` (3 s) in `Presence.swift`; minimum absence for a card (5 s) in `AppState.presenceChanged`. Uses the system default camera; if the Mac mini picks the wrong one, select the device explicitly in `Presence.configure`.
+- `main` after the three merges needs one `check.sh main`.
+- In-person live tests for T05, T16, T17 are deferred to the end: see T28 in STATUS.md. T05 will likely need `maxAngle` / `awayAfter` tuning in `Presence.swift`.
 
 ## Ideas and things to remember
 
