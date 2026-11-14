@@ -175,6 +175,9 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T13 Speaker labels at end of session: `SessionAudio`, `SpeakerLabeler` (SpeakerKit), `Speakers.assign` | Aziz | Sat 8:00 pm | `aziz/call-notes` |
+| T14 Speaker names from context: `NameResolver`, `prompts/names.txt`, `clueless-bench names` | Aziz | Sat 8:00 pm | `aziz/call-notes` |
+| T15 Session notes by speaker with names: `SessionNotes.make`; notes prompt asks for decisions, action items, open questions | Aziz | Sat 8:00 pm | `aziz/call-notes` |
 | T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 7:15 pm | `aziz/word-cut` |
 | T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 7:00 pm | `aziz/prompt-cache` |
 | T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |

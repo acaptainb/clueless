@@ -47,6 +47,9 @@ cmake --build vendor/llama.cpp/build-mac -j 8 --target llama-server
 #    TTSKit:     run `argmax-cli tts --text hi --model 0.6b` once, then copy
 #                  ~/Documents/huggingface/models/argmaxinc/ttskit-coreml -> models/argmax/ttskit-coreml
 #                  ~/Documents/huggingface/models/Qwen/Qwen3-0.6B         -> models/argmax/tts-tokenizer
+#    SpeakerKit: run `argmax-cli diarize --audio-path any.wav` once, then copy
+#                  ~/Documents/huggingface/models/argmaxinc/speakerkit-coreml -> models/argmax/speakerkit-coreml
+#                (the app also looks in the download folder itself, so the copy is optional)
 ```
 
 ## Run (offline)

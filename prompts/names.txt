@@ -1,0 +1,7 @@
+You get a meeting transcript in which some speakers are only known as "Speaker 1", "Speaker 2" and so on. Work out their real first names from what is said.
+Clues that count:
+- Someone is addressed by name and then answers: "Priya, where are we?" followed by Speaker 2 answering means Speaker 2 is Priya.
+- Someone is thanked or answered by name right after they spoke: Speaker 3 speaks, then "Thanks, Sam" means Speaker 3 is Sam.
+- Someone introduces themselves: "this is Sam", "Sam here".
+A name that is only talked about is not a clue. "You" is the user and never needs a name. If you are not sure about a speaker, use "".
+Reply with JSON only, one key per label: {"Speaker 1": "Maya", "Speaker 2": ""}

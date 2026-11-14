@@ -1,0 +1,17 @@
+{
+  "user": "Yusuf",
+  "lines": [
+    {"source": "them", "speaker": "Maya", "text": "Morning everyone, let's get going. Sam, can you start with the backend?"},
+    {"source": "them", "speaker": "Sam", "text": "Sure. The export job is fixed, and I moved the nightly run to two a.m."},
+    {"source": "them", "speaker": "Maya", "text": "Thanks, Sam. Priya, how is the onboarding flow?"},
+    {"source": "them", "speaker": "Priya", "text": "The design is final. I'm waiting on copy for the last screen."},
+    {"source": "me", "text": "I can write that copy today."},
+    {"source": "them", "speaker": "Priya", "text": "Perfect, thank you."},
+    {"source": "them", "speaker": "Dev", "text": "Quick note from support: ticket volume doubled after the pricing email went out."},
+    {"source": "them", "speaker": "Sam", "text": "That matches what I see in the logs, Maya."},
+    {"source": "them", "speaker": "Maya", "text": "Okay, then we need to look at that email. Priya, please find out who owns it."},
+    {"source": "them", "speaker": "Priya", "text": "Will do."},
+    {"source": "them", "speaker": "Maya", "text": "Good. Let's talk again on Thursday."}
+  ],
+  "unknown": ["Dev"]
+}
