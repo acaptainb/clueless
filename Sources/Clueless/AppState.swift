@@ -28,7 +28,7 @@ final class AppState: ObservableObject {
     var autoStartAttempts = 0
     @AppStorage("userName") var userName = "Yusuf"
     @AppStorage("speak") var speak = true
-    @AppStorage("screenMethod") var screenMethodRaw = ScreenMethod.both.rawValue
+    @AppStorage("screenMethod") var screenMethodRaw = ScreenMethod.auto.rawValue
 
     struct HUD {
         var stt = 0.0, ocr = 0.0, llm = 0.0, tps = 0.0, watch = 0.0
@@ -52,7 +52,7 @@ final class AppState: ObservableObject {
     private var hudTimer: Timer?
     private var napGuard: NSObjectProtocol?
 
-    var screenMethod: ScreenMethod { ScreenMethod(rawValue: screenMethodRaw) ?? .both }
+    var screenMethod: ScreenMethod { ScreenMethod(rawValue: screenMethodRaw) ?? .auto }
 
     init() {
         let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
@@ -229,10 +229,14 @@ final class AppState: ObservableObject {
             do { shot = try await capture.screenshot() } catch { Log.write("[screenshot failed] \(error.localizedDescription)") }
         }
         if let shot {
-            let t0 = Date()
-            if method != .image { screenText = await Task.detached { ScreenText.recognize(shot) }.value }
-            hud.ocr = Date().timeIntervalSince(t0)
-            if method != .ocr { image = ScreenText.jpeg(shot) }
+            // The core decides what to send. With "auto" the screenshot is only attached when the question
+            // is about something visual, because an image makes the first token take about 6 s (T08).
+            let input = await Task.detached {
+                ScreenInput.prepare(shot, method: method, task: task, question: question)
+            }.value
+            screenText = input.text
+            image = input.image
+            hud.ocr = input.ocrSeconds
             if !screenText.isEmpty { timeline.append(.screen, String(screenText.prefix(300))) }
         }
 

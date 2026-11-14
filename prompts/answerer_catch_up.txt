@@ -1,0 +1,5 @@
+The user lost the thread and needs to be caught up right now.
+- "asked": the question or request most recently directed at the user, in one sentence. "" if nobody asked them anything.
+- "missed": the 1 to 2 most important things said recently, in one or two sentences.
+- "reply": one natural sentence the user could say out loud next. "" if no reply is needed.
+JSON shape: {"asked": "...", "missed": "...", "reply": "...", "sources": [215, 212]}
