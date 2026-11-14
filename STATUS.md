@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:40 pm ET by Aziz
+Last updated: Sat Nov 14, 7:05 pm ET by Aziz
 
 ## People
 
@@ -115,6 +115,11 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 11:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
 | T09 Keep the prompt prefix identical between requests so the server reuses its cache | Aziz | `aziz/prompt-cache` | Sat 6:40 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T19 Forced cut at 8 s can split a word: cut at the quietest point instead | Aziz | `aziz/word-cut` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T13 Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T14 Resolve speaker names from context | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T15 End-of-session notes by speaker, using the names | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T10 Grow the test set to about 20 questions | Aziz | `aziz/test-set` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 
 ## Up next
 
@@ -137,17 +142,12 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### Performance (the main focus)
 | ID | Task | Suggested |
 |---|---|---|
-| T10 | Grow the test set to about 20 questions and add real recorded audio, not only synthetic speech | Aziz |
-| T19 | The forced cut at 8 s can split a word across two lines: overlap chunks or cut at a word boundary | Aziz |
 
 ### M3 Call mode
 | ID | Task | Suggested |
 |---|---|---|
 | T11 | Live test of call mode: microphone = You, system audio = Them (needs Microphone permission) | Yusuf |
 | T12 | Name trigger through the watcher, live: saying the user's name produces a catch-up card | Yusuf |
-| T13 | Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz |
-| T14 | Resolve speaker names from context ("thanks, Priya") | Aziz |
-| T15 | End-of-session notes by speaker, using the names | Aziz |
 
 ### Reliability
 | ID | Task | Suggested |
