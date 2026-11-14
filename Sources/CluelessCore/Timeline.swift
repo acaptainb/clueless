@@ -68,13 +68,14 @@ public final class Timeline: @unchecked Sendable {
 
     public var all: [TimelineLine] { lock.lock(); defer { lock.unlock() }; return lines }
 
-    /// Lines from about the last `seconds`, capped at about `maxLines` (newest kept).
+    /// Lines from the last `seconds`, capped at `maxLines` (newest kept). That is the default, `step: 0`:
+    /// the exact window, which callers such as the look-away trigger rely on.
     ///
-    /// The first line returned only changes every `step` seconds (and, when the cap is hit, every 10 lines),
+    /// With `step: 60` the first line returned only changes every `step` seconds (and, when the cap is hit, every 10 lines),
     /// not on every call. Two requests a few seconds apart then start with the same lines, and the Bonsai
     /// server reuses its evaluation of them instead of reading the whole timeline again. The window is
-    /// therefore up to `step` seconds longer than asked for. `step: 0` gives the exact window.
-    public func recent(seconds: TimeInterval, maxLines: Int = 60, step: TimeInterval = 60, now: Date = Date()) -> [TimelineLine] {
+    /// then up to `step` seconds longer than asked for. Use it for requests to the answerer.
+    public func recent(seconds: TimeInterval, maxLines: Int = 60, step: TimeInterval = 0, now: Date = Date()) -> [TimelineLine] {
         lock.lock(); defer { lock.unlock() }
         var cutoff = now.addingTimeInterval(-seconds)
         if step > 0 {
