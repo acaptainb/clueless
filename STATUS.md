@@ -4,17 +4,41 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 5:25 pm ET by Yusuf
+Last updated: Sat Nov 14, 5:40 pm ET by Yusuf
 
 ## People
 
-| Person | GitHub | Role | Machine notes |
-|---|---|---|---|
-| Yusuf | `acaptainb` | A, the app (proposed, confirm) | M6, 32 GB. Models installed, Screen Recording granted, live capture working |
-| Teammate (fill in name) | (fill in) | B, the engine (proposed, confirm) | Needs README setup first (T22) |
+| Person | Codes on | Role | Branch prefix | Notes folder |
+|---|---|---|---|---|
+| Aziz | Windows laptop. Cannot build or run the app at all | B, the engine (proposed, confirm) | `aziz/` | `team/aziz/` |
+| Yusuf | Laptop. Coding only | A, the app (proposed, confirm) | `yusuf/` | `team/yusuf/` |
 
 Role A owns `Sources/Clueless/`. Role B owns `Sources/CluelessCore/`, `Sources/clueless-bench/`, `scripts/`.
 `AppState.swift` is the glue file: A owns it; B adds functions in the core and A calls them.
+
+## Machines
+
+**Laptops are for writing code only. Nothing is built, run or tested on a laptop.**
+
+**The Mac mini is the only build and test machine** ("James's Mac Mini", M6, 32 GB, macOS 27).
+- Checkout: `/Users/captain/clueless`. It holds everything that is not in git: `models/`, `vendor/llama.cpp`,
+  and the Screen Recording permission for Clueless.app.
+- Attached: onn 4K webcam with microphone (needed for the look-away trigger and call mode).
+- Test a pushed branch: `./scripts/check.sh <branch>` (build + benchmarks, prints PASS or FAIL).
+  Add `app` to also launch that branch's app for a live test.
+- One test at a time. The servers, screen and speakers are shared, so check the table below first.
+
+## Mac mini test queue
+
+Code is not done until it has passed on the Mac mini. After pushing a branch, add a line here (push the
+STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
+once the PR is merged.
+
+Mac mini in use right now by: nobody
+
+| Branch | Who | What to test beyond `check.sh` | Result |
+|---|---|---|---|
+| (empty) | | | |
 
 ## Milestones
 
@@ -44,57 +68,58 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### M1 Study mode
 | ID | Task | Suggested |
 |---|---|---|
-| T01 | Verify spoken answers in the live app (TTSKit plays, does not get transcribed back) | A |
-| T02 | Verify hotkeys in the live app: Option+Space ask, Option+C catch-up, Option+S stop speaking | A |
-| T03 | Run the whole app with Wi-Fi off on each laptop; record the result in BENCHMARKS.md | both |
-| T04 | Check answer quality on a real lecture video and a real PDF on screen (needs T21 assets) | B |
+| T01 | Verify spoken answers in the live app (TTSKit plays, does not get transcribed back) | Yusuf |
+| T02 | Verify hotkeys in the live app: Option+Space ask, Option+C catch-up, Option+S stop speaking | Yusuf |
+| T03 | Run the whole app on the Mac mini with Wi-Fi off; record the result in BENCHMARKS.md | Yusuf |
+| T04 | Check answer quality on a real lecture video and a real PDF on screen (needs T21 assets) | Aziz |
 
 ### M2 Catch-up
 | ID | Task | Suggested |
 |---|---|---|
-| T05 | Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | A |
-| T06 | Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | A |
-| T07 | Start speaking the first field as soon as it is complete, not after the whole card | A |
+| T05 | Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf |
+| T06 | Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf |
+| T07 | Start speaking the first field as soon as it is complete, not after the whole card | Yusuf |
 
 ### Performance (the main focus)
 | ID | Task | Suggested |
 |---|---|---|
-| T08 | Cut the screenshot cost (first token is 6 s with an image): smaller or cropped image, or OCR by default and image only for visual questions. Measure each | B |
-| T09 | Keep the prompt prefix identical between requests so the server reuses its cache; measure prompt time | B |
-| T10 | Grow the test set to about 20 questions and add real recorded audio, not only synthetic speech | B |
-| T19 | The forced cut at 8 s can split a word across two lines: overlap chunks or cut at a word boundary | B |
+| T08 | Cut the screenshot cost (first token is 6 s with an image): smaller or cropped image, or OCR by default and image only for visual questions. Measure each | Aziz |
+| T09 | Keep the prompt prefix identical between requests so the server reuses its cache; measure prompt time | Aziz |
+| T10 | Grow the test set to about 20 questions and add real recorded audio, not only synthetic speech | Aziz |
+| T19 | The forced cut at 8 s can split a word across two lines: overlap chunks or cut at a word boundary | Aziz |
 
 ### M3 Call mode
 | ID | Task | Suggested |
 |---|---|---|
-| T11 | Live test of call mode: microphone = You, system audio = Them (needs Microphone permission) | A |
-| T12 | Name trigger through the watcher, live: saying the user's name produces a catch-up card | A |
-| T13 | Speaker labels at end of session with SpeakerKit on the recorded system audio | B |
-| T14 | Resolve speaker names from context ("thanks, Priya") | B |
-| T15 | End-of-session notes by speaker, using the names | B |
+| T11 | Live test of call mode: microphone = You, system audio = Them (needs Microphone permission) | Yusuf |
+| T12 | Name trigger through the watcher, live: saying the user's name produces a catch-up card | Yusuf |
+| T13 | Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz |
+| T14 | Resolve speaker names from context ("thanks, Priya") | Aziz |
+| T15 | End-of-session notes by speaker, using the names | Aziz |
 
 ### Reliability
 | ID | Task | Suggested |
 |---|---|---|
-| T16 | App starts and health-checks the Bonsai servers itself; clear message when one is down | A |
-| T17 | Restart capture automatically if the stream stops | A |
+| T16 | App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf |
+| T17 | Restart capture automatically if the stream stops | Yusuf |
 | T18 | 20-minute soak test: memory, lag and crashes over a long session | both |
 
 ### M5 Ship
 | ID | Task | Suggested |
 |---|---|---|
-| T20 | Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | A |
-| T21 | Demo assets, stored locally: a lecture video, a PDF paper, a 2 to 3 minute multi-speaker call | B |
-| T22 | Teammate laptop setup from the README (llama.cpp fork, Bonsai models, Argmax models) | Teammate |
+| T20 | Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | Yusuf |
+| T21 | Demo assets, stored locally: a lecture video, a PDF paper, a 2 to 3 minute multi-speaker call | Aziz |
+| T22 | Decide how each person reaches the Mac mini from their laptop (in person, or turn on Remote Login / Screen Sharing) so tests can be started without waiting | both |
+| T26 | Move the prompts and the benchmark test cases out of Swift into data files, so they can be edited (from Windows too) and re-tested without touching Swift code | Aziz |
 | T23 | Record the demo video, under 2 minutes | both |
 | T24 | Final README and the Discord submission | both |
-| T25 | Optional: ask a question by voice instead of typing | A |
+| T25 | Optional: ask a question by voice instead of typing | Yusuf |
 
 ## Open questions
 
 - Is Apple's built-in OCR fine under the "LLMs must be Bonsai" rule? Ask the organizer.
 - Argmax Pro key: requested? received? (decides M4)
-- Which laptop runs the live demo? (it must be set up and rehearsed with Wi-Fi off)
+- The live demo has to run on the Mac mini (the rules say "own laptop allowed"). Can it be brought to the finals with a screen, keyboard, webcam and speakers? Ask the organizer.
 
 ## Done
 
@@ -102,6 +127,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Yusuf | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
 | Team tracking: STATUS.md, WORKLOG.md, workflow rules | Yusuf | Sat 5:25 pm | `main` |
 | Answers stream into the card (first words in 0.8 s) | Yusuf | Sat 4:58 pm | PR #1 |
 | Live system-audio capture and transcription verified in the app | Yusuf | Sat 4:55 pm | PR #1 |
