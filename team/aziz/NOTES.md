@@ -18,7 +18,7 @@ T08 is written and waiting for the Mac mini (below). Next engine tasks by payoff
 - Still open after that: T04 (needs the Mac mini and T21 assets), the real-audio half of T10, and wiring `SessionNotes.make` and `SessionAudio` into `AppState.swift` (asked of Yusuf in the work log).
 - The laptop clock is Pacific and `TZ=America/New_York date` prints UTC in Git Bash. Eastern time = laptop time + 3 hours.
 
-- Mac mini queue for my part, in order (Sat 7:10 pm): 1 measure T26/T08 on `main`; 2 `aziz/demo-assets` (T21); 3 `aziz/servers-one` = PR #8 (T09, T19, T13 to T15, T10, T27); 4 T04 on `main`. PRs #9, #10, #11 were closed in favour of #8.
+- Mac mini queue for my part, in order (Sat 7:10 pm): 1 measure T26/T08 on `main`; 2 `aziz/demo-assets` (T21); 3 `main` after PR #8 (T09, T19, T13 to T15, T10, T27), which was merged before any Mac mini run, so `main` may not build until that run; 4 T04 on `main`. PRs #9, #10, #11 were closed in favour of #8.
 
 ## Ideas and things to remember
 
