@@ -113,12 +113,6 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T06 Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf | `yusuf/receipts` | Sat 6:45 pm | Being written on the MacBook |
 | T07 Start speaking as soon as the first sentence of a card is complete, not after the whole card | Yusuf | `yusuf/speak-early` | Sat 6:40 pm | Written on the MacBook, compile-checked only |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
-| T19 Forced cut at 8 s can split a word: cut at the quietest point instead | Aziz | `aziz/word-cut` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T13 Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz | `aziz/call-notes` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T14 Resolve speaker names from context | Aziz | `aziz/call-notes` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T15 End-of-session notes by speaker, using the names | Aziz | `aziz/call-notes` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T10 Grow the test set to about 20 questions | Aziz | `aziz/test-set` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T27 `servers.sh start answerer` / `start watcher`: start or stop one server alone (asked for by Yusuf for T16) | Aziz | `aziz/servers-one` | Sat 6:25 pm | Written on the Windows laptop, not run; stacked on `aziz/test-set` |
 | T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Written on the Windows laptop. Slides and PDF checked in a browser there; the audio script has never been run |
 
 ## Up next
@@ -174,8 +168,13 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
-| T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 7:15 pm | `aziz/word-cut` |
-| T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 7:00 pm | `aziz/prompt-cache` |
+| T27 `servers.sh start answerer` / `start watcher` / `stop <name>`: one server alone | Aziz | Sat 6:30 pm | `aziz/servers-one` |
+| T10 Test set grown to 20 questions (`bench/questions_more.json`). Real recorded audio still to do, needs the T21 recordings | Aziz | Sat 6:30 pm | `aziz/test-set` |
+| T13 Speaker labels at end of session: `SessionAudio`, `SpeakerLabeler` (SpeakerKit), `Speakers.assign` | Aziz | Sat 6:30 pm | `aziz/call-notes` |
+| T14 Speaker names from context: `NameResolver`, `prompts/names.txt`, `clueless-bench names` | Aziz | Sat 6:30 pm | `aziz/call-notes` |
+| T15 Session notes by speaker with names: `SessionNotes.make`; notes prompt asks for decisions, action items, open questions | Aziz | Sat 6:30 pm | `aziz/call-notes` |
+| T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 6:30 pm | `aziz/word-cut` |
+| T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 6:30 pm | `aziz/prompt-cache` |
 | T05 Look-away trigger (webcam + Vision). `check.sh` PASS and the simulated absence passed on the Mac mini; real head-turn test and tuning deferred to T28 | Yusuf | Sat 6:45 pm | PR #3 |
 | T17 Capture restarts itself after a stream error or a 15 s stall. `check.sh` PASS, no false restart in silence; the restart itself has not fired yet, deferred to T28 | Yusuf | Sat 6:45 pm | PR #5 |
 | T16 App starts and health-checks the Bonsai servers. `check.sh` PASS; auto-start and restart after a kill verified on the Mac mini; panel row and Restart button deferred to T28 | Yusuf | Sat 6:45 pm | PR #4 |

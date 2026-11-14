@@ -14,6 +14,7 @@ public enum Paths {
     public static var whisperTokenizer: URL { models.appendingPathComponent("argmax") }
     public static var ttsModels: URL { models.appendingPathComponent("argmax/ttskit-coreml") }
     public static var ttsTokenizer: URL { models.appendingPathComponent("argmax/tts-tokenizer") }
+    public static var speakerModels: URL { models.appendingPathComponent("argmax/speakerkit-coreml") }
     public static var sessions: URL { root.appendingPathComponent("sessions") }
 }
 
@@ -318,7 +319,8 @@ public struct Answerer: Sendable {
             """
         case .notes:
             return """
-            Write end-of-session notes: decisions, action items with owner, and open questions. Attribute by speaker. \
+            Write end-of-session notes in three parts, in this order: DECISIONS, ACTION ITEMS, OPEN QUESTIONS. Leave out a part that has nothing in it.
+            Say who decided, who owns each action item and by when if a time was said, and who raised each open question. Use the speakers' names exactly as they appear in the timeline; "You" is the user.
             Plain text with short lines, no markdown.
             JSON shape: {"answer": "...", "sources": [3, 8, 14]}
             """
