@@ -115,6 +115,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T25 Ask a question by voice instead of typing (study mode; microphone + WhisperKit) | Yusuf | `yusuf/voice-ask` | Sat 7:00 pm | Being written on the MacBook |
 | T29 (new) Cards include the last few seconds: on a trigger, transcribe the audio still in the buffer before building the card. Found in the Mac mini look-away test (3 lines counted, 5 in the window) | Yusuf | `yusuf/fresh-catchup` | Sat 6:55 pm | Being written on the MacBook |
 | T20 Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | Yusuf | `yusuf/hud` | Sat 6:50 pm | Being written on the MacBook (first session; T06 was written in Yusuf's second session) |
 | T06 Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf | `yusuf/receipts` | Sat 6:45 pm | Written on the MacBook, compile-checked only. PR #15 (draft), in the test queue |
@@ -159,7 +160,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 | T22 | Decide how each person reaches the Mac mini from their laptop (in person, or turn on Remote Login / Screen Sharing) so tests can be started without waiting | both |
 | T23 | Record the demo video, under 2 minutes | both |
 | T24 | Final README and the Discord submission | both |
-| T25 | Optional: ask a question by voice instead of typing | Yusuf |
 
 ## Open questions
 
