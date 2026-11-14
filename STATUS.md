@@ -65,6 +65,7 @@ Mac mini in use right now by: nobody
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
 | `yusuf/look-away` | Yusuf | T05. `check.sh yusuf/look-away app`, Call or Study mode, something playing. (1) Camera prompt appears; allow it; eye icon shows in the header. (2) Turn your head away or leave for 10 s while audio plays, look back: a "While you looked away" card appears within about 1 s of returning. (3) A 1 to 2 s glance away does nothing. (4) Look away with silence: no card. (5) Pause capture: camera light goes off. If it fires too easily or not at all, note it: the angle (`maxAngle`) and timing (`awayAfter`) in `Presence.swift` need tuning on the real webcam. No-person check: launch with `CLUELESS_AUDIO_FILE=<wav> CLUELESS_TEST_LOOKAWAY=20` and a card should appear about 50 s in | not run yet |
+| `yusuf/server-health` | Yusuf | T16. `check.sh yusuf/server-health app`. (1) With the servers stopped (`servers.sh stop`), launch the app: an orange row says it is starting the servers, it clears in about 20 s, both HUD dots go green, a question works. (2) While the app runs, `kill $(cat .run/answerer.pid)`: within about 5 s the row appears and the servers restart by themselves; a question asked meanwhile gets a "still starting" card, not a hang. (3) `kill $(cat .run/watcher.pid)` only: the row says the watcher is down and offers Restart; nothing restarts until the button is pressed; questions still work. (4) Ask a long question and confirm the servers are NOT restarted while it is answering | not run yet |
 
 ## Milestones
 

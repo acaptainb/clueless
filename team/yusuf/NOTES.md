@@ -7,8 +7,11 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 T05 look-away trigger, branch `yusuf/look-away`. Code is pushed and compiles. Waiting for the Mac mini.
 
+T16 server health checks, branch `yusuf/server-health`. Code is pushed and compiles. Waiting for the Mac mini.
+
 ## Pushed, waiting for a Mac mini test
 
+- `yusuf/server-health` (T16). Both this and `yusuf/look-away` edit `AppState.swift` and `OverlayView.swift` near the same lines; whichever merges second needs `origin/main` merged in and a small conflict fix.
 - `yusuf/look-away` (T05). Likely tuning after the live test: `maxAngle` (0.52 rad) and `awayAfter` (3 s) in `Presence.swift`; minimum absence for a card (5 s) in `AppState.presenceChanged`. Uses the system default camera; if the Mac mini picks the wrong one, select the device explicitly in `Presence.configure`.
 
 ## Ideas and things to remember
