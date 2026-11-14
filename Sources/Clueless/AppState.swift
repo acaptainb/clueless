@@ -9,7 +9,7 @@ enum Mode: String, CaseIterable, Identifiable { case study = "Study", call = "Ca
 @MainActor
 final class AppState: ObservableObject {
     @Published var mode: Mode = .study
-    @Published var recording = false
+    @Published var recording = false { didSet { syncPresence() } }
     @Published var status = "Loading models…" { didSet { Log.write("[status] \(status)") } }
     @Published var tail: [TimelineLine] = []
     @Published var card: Card?
@@ -18,6 +18,7 @@ final class AppState: ObservableObject {
     @Published var question = ""
     @Published var focusQuestion = 0          // bumped by the hotkey to focus the field
     @Published var hud = HUD()
+    @Published var presence = Presence.Status.off
     /// Shown as a warning row in the panel while a Bonsai server is down, loading or being started.
     @Published var serverIssue: String?
     @Published var serverCanRestart = false
@@ -28,6 +29,7 @@ final class AppState: ObservableObject {
     var autoStartAttempts = 0
     @AppStorage("userName") var userName = "Yusuf"
     @AppStorage("speak") var speak = true
+    @AppStorage("lookAway") var lookAway = true { didSet { syncPresence() } }
     @AppStorage("screenMethod") var screenMethodRaw = ScreenMethod.auto.rawValue
 
     struct HUD {
@@ -54,7 +56,9 @@ final class AppState: ObservableObject {
     private let work = DispatchQueue(label: "clueless.chunks")
     private var chunkers: [Capture.Source: AudioChunker] = [:]
     private var sttChain: Task<Void, Never>?
-    private var lastWatchTrigger = Date.distantPast
+    private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
+    private let webcam = Presence()
+    private var webcamOn = false
     private let pathMonitor = NWPathMonitor()
     private var hudTimer: Timer?
     private var napGuard: NSObjectProtocol?
@@ -74,6 +78,16 @@ final class AppState: ObservableObject {
         // Keep transcribing at full speed while another app is in front (no App Nap).
         napGuard = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical],
                                                          reason: "Live transcription")
+        webcam.onStatus = { [weak self] status in self?.presence = status }
+        webcam.onEvent = { [weak self] event in self?.presenceChanged(event) }
+        // Test hook: CLUELESS_TEST_LOOKAWAY=<seconds> pretends the user looked away for that long, then
+        // came back, so the trigger-to-card path can be checked without a person at the webcam.
+        if let seconds = Double(ProcessInfo.processInfo.environment["CLUELESS_TEST_LOOKAWAY"] ?? "") {
+            Task { [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64((30 + seconds) * 1e9))
+                self?.presenceChanged(.returned(awaySeconds: seconds, since: Date().addingTimeInterval(-seconds)))
+            }
+        }
         Task { await load() }
     }
 
@@ -210,6 +224,36 @@ final class AppState: ObservableObject {
         }
     }
 
+    // MARK: look-away trigger
+
+    /// The webcam runs only while recording and while the setting is on.
+    private func syncPresence() {
+        let wanted = recording && lookAway
+        guard wanted != webcamOn else { return }
+        webcamOn = wanted
+        if wanted { webcam.start() } else { webcam.stop() }
+    }
+
+    private func presenceChanged(_ event: PresenceTracker.Event) {
+        switch event {
+        case .left(let at):
+            timeline.append(.webcam, "Looked away", at: at)
+        case .returned(let seconds, let since):
+            timeline.append(.webcam, "Looked back after \(Int(seconds)) s")
+            // Only worth a card if the user was gone a while and somebody said something meanwhile.
+            let missed = timeline.recent(seconds: Date().timeIntervalSince(since), maxLines: 200)
+                .filter { $0.source == .them }
+            Log.write("[presence] back after \(Int(seconds)) s, \(missed.count) lines missed")
+            guard recording, seconds >= 5, !missed.isEmpty, !thinking,
+                  Date().timeIntervalSince(lastWatchTrigger) > 20 else { return }
+            lastWatchTrigger = Date()
+            // Only the absence plus a short lead-in for context. A wider window made the card summarise
+            // everything said so far instead of what was missed (seen in the Mac mini test).
+            let window = min(600, seconds + 20)
+            Task { await run(.catchUp, title: "While you looked away (\(Int(seconds)) s)", window: window) }
+        }
+    }
+
     // MARK: answers
 
     func ask() {
@@ -224,7 +268,8 @@ final class AppState: ObservableObject {
 
     func notes() { Task { await run(.notes, title: "Session notes") } }
 
-    private func run(_ task: AnswerTask, title: String, question: String? = nil) async {
+    private func run(_ task: AnswerTask, title: String, question: String? = nil,
+                     window: TimeInterval? = nil) async {
         guard !thinking else { return }
         if startingServers {
             var waiting = Card(task: task)
@@ -255,7 +300,7 @@ final class AppState: ObservableObject {
             if !screenText.isEmpty { timeline.append(.screen, String(screenText.prefix(300))) }
         }
 
-        let window: TimeInterval = task == .notes ? 3600 : (task == .catchUp ? 150 : 300)
+        let window: TimeInterval = window ?? (task == .notes ? 3600 : (task == .catchUp ? 150 : 300))
         let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45)
             .filter { $0.source == .them || $0.source == .me }
         do {

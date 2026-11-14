@@ -27,6 +27,15 @@ struct OverlayView: View {
     private var header: some View {
         HStack(spacing: 8) {
             Circle().fill(state.recording ? Color.red : Color.gray).frame(width: 10, height: 10)
+            // Visible whenever the webcam is in use for the look-away trigger.
+            if state.presence != .off {
+                Image(systemName: state.presence == .present ? "eye" : (state.presence == .away ? "eye.slash" : "video.slash"))
+                    .font(.caption)
+                    .foregroundStyle(state.presence == .away ? Color.orange : Color.secondary)
+                    .help(state.presence == .present ? "Webcam on: you are facing the screen"
+                          : state.presence == .away ? "Webcam on: you looked away. Clueless will catch you up when you are back"
+                          : "Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
+            }
             Text(state.recording ? "Recording screen + audio · on this Mac only" : state.status)
                 .font(.caption).foregroundStyle(.secondary).lineLimit(2)
             Spacer()
@@ -84,6 +93,7 @@ struct OverlayView: View {
             Menu {
                 Button("Session notes", action: state.notes)
                 Toggle("Speak answers", isOn: $state.speak)
+                Toggle("Catch me up when I look away (webcam)", isOn: $state.lookAway)
                 Picker("Screen input", selection: $state.screenMethodRaw) {
                     Text("Auto: screenshot only for visual questions").tag(ScreenMethod.auto.rawValue)
                     Text("Screenshot + OCR text (most accurate)").tag(ScreenMethod.both.rawValue)
