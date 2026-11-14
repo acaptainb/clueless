@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:05 pm ET by Aziz
+Last updated: Sat Nov 14, 6:30 pm ET by Aziz
 
 ## People
 
@@ -110,7 +110,6 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T05 Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf | `yusuf/look-away` | Sat 5:45 pm | Written on the MacBook, compile-checked only; needs a live Mac mini test with the webcam |
 | T16 App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf | `yusuf/server-health` | Sat 5:50 pm | Written on the MacBook, compile-checked only |
 | T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
-| T26 Move the prompts and the benchmark test cases out of Swift into data files | Aziz | `aziz/prompts-data` | Sat 6:05 pm | Written on the Windows laptop, not compiled; needs `check.sh` on the Mac mini |
 
 ## Up next
 
@@ -174,6 +173,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |
 | Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
 | Team tracking: STATUS.md, WORKLOG.md, workflow rules | Aziz | Sat 5:25 pm | `main` |
 | Answers stream into the card (first words in 0.8 s) | Aziz | Sat 4:58 pm | PR #1 |

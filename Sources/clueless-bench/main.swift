@@ -4,6 +4,10 @@
 //   clueless-bench answer [port] [label]             question + catch-up test set on one model
 //   clueless-bench watch  [port]                     watcher: code check alone vs code check + 2B
 //   clueless-bench tts                               speech latency
+//   clueless-bench prompts                           which prompt files are in use (needs no servers)
+//
+// Test cases are data, not code: bench/call.json, questions.json, watch.json, screen.json.
+// Prompts are in prompts/*.txt. Edit those and re-run; no Swift change is needed.
 import Foundation
 import AVFoundation
 import CluelessCore
@@ -76,9 +80,43 @@ func benchChunk(_ wav: String, _ refPath: String) async throws {
     }
 }
 
-// MARK: screen
+// MARK: test data (bench/*.json)
 
-struct QA { let q: String; let expect: [String] }
+struct QA: Decodable { let q: String; let expect: [String] }
+struct QuestionCase: Decodable { let q: String; let expect: [String]; let sources: [Int] }
+struct CallData: Decodable {
+    struct Line: Decodable { let source: String; let speaker: String?; let text: String }
+    struct CatchUp: Decodable { let asked: [String]; let source: Int }
+    let user: String
+    let lines: [Line]
+    let catchup: CatchUp
+}
+struct WatchData: Decodable {
+    struct Line: Decodable { let speaker: String; let text: String }
+    struct Case: Decodable { let speaker: String; let text: String; let want: Bool }
+    let user: String
+    let context: [Line]
+    let cases: [Case]
+}
+
+/// Reads bench/<name>.json from the working copy this tool was built from (or `path` when given).
+/// A missing or invalid file stops the run: quietly testing something else would be worse.
+func loadCases<T: Decodable>(_ name: String, path: String? = nil) -> T {
+    let file = path ?? Prompts.dataRoot.appendingPathComponent("bench").appendingPathComponent(name + ".json").path
+    guard var data = FileManager.default.contents(atPath: file) else {
+        print("error: cannot read \(file)")
+        exit(1)
+    }
+    if data.starts(with: [0xEF, 0xBB, 0xBF]) { data = Data(data.dropFirst(3)) }   // byte-order mark from Windows editors
+    do {
+        return try JSONDecoder().decode(T.self, from: data)
+    } catch {
+        print("error: \(file) is not valid: \(error)")
+        exit(1)
+    }
+}
+
+// MARK: screen
 
 func hit(_ answer: String, _ expect: [String]) -> Bool {
     let a = answer.lowercased()
@@ -93,18 +131,7 @@ func benchScreen(_ imagePath: String, _ qaPath: String?) async throws {
     let jpeg = ScreenText.jpeg(image)!
     print("OCR: \(f(ocrSeconds))s, \(ocr.count) chars. JPEG: \(jpeg.count / 1024) KB\n--- OCR text ---\n\(ocr)\n---\n")
 
-    var qas = [
-        QA(q: "What is the learning rate in this example?", expect: ["0.01"]),
-        QA(q: "What batch size is used?", expect: ["64"]),
-        QA(q: "When is the homework due?", expect: ["thursday"]),
-        QA(q: "What happens if the learning rate is too large?", expect: ["diverge"]),
-        QA(q: "Write the update rule shown on the slide.", expect: ["w", "η|eta|learning rate", "∇|gradient|nabla"]),
-        QA(q: "Which course and professor is this?", expect: ["4780", "weinberger"]),
-    ]
-    if let qaPath, let data = FileManager.default.contents(atPath: qaPath),
-       let arr = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-        qas = arr.map { QA(q: $0["q"] as! String, expect: $0["expect"] as! [String]) }
-    }
+    let qas: [QA] = loadCases("screen", path: qaPath)
     let answerer = Answerer()
     print(pad("method", 8), pad("correct", 9), pad("avg s", 7), pad("prompt tok", 11), "misses")
     for method in [ScreenMethod.ocr, .image, .both] {
@@ -124,46 +151,31 @@ func benchScreen(_ imagePath: String, _ qaPath: String?) async throws {
 
 // MARK: answer
 
-func sampleCall() -> Timeline {
+/// The sample call from bench/call.json as a timeline. Line N of the file gets id N (L1, L2, ...).
+func sampleCall(_ call: CallData) -> Timeline {
     let tl = Timeline()
     let base = Date().addingTimeInterval(-120)
-    let script: [(TimelineLine.Source, String?, String)] = [
-        (.them, "Maya", "Okay, let's start. First item is the launch checklist for the mobile release."),
-        (.them, "Sam", "The API changes are merged, but the push notification service is still failing in staging."),
-        (.me, nil, "I can look at the push service after this call."),
-        (.them, "Maya", "Great. Priya, where are we on the App Store screenshots?"),
-        (.them, "Priya", "Screenshots are done. I need the final copy from marketing by Wednesday."),
-        (.them, "Sam", "One more thing, the database migration takes about forty minutes, so we need a maintenance window."),
-        (.them, "Maya", "Let's do the migration Thursday night at ten p.m. Sam owns it."),
-        (.them, "Priya", "Budget wise, we have twelve thousand dollars left for the launch ads."),
-        (.them, "Maya", "Good. We decided to cut the tablet layout from this release and ship it in January."),
-        (.them, "Sam", "Agreed. That saves us about a week of QA."),
-        (.them, "Maya", "Yusuf, can your team still hit Friday for the release candidate, given the push notification bug?"),
-    ]
-    for (i, s) in script.enumerated() {
-        tl.append(s.0, s.2, speaker: s.1, at: base.addingTimeInterval(Double(i) * 9))
+    for (i, line) in call.lines.enumerated() {
+        guard let source = TimelineLine.Source(rawValue: line.source) else {
+            print("error: bench/call.json line \(i + 1): unknown source '\(line.source)' (use them, me, screen, webcam or system)")
+            exit(1)
+        }
+        tl.append(source, line.text, speaker: line.speaker, at: base.addingTimeInterval(Double(i) * 9))
     }
     return tl
 }
 
 func benchAnswer(port: Int, label: String) async throws {
     let answerer = Answerer(client: BonsaiClient(port: port))
-    let lines = sampleCall().all
-    let qas: [(String, [String], [Int])] = [   // question, expected keywords, acceptable source lines
-        ("When is the database migration happening?", ["thursday", "ten|10"], [7]),
-        ("Who owns the migration?", ["sam"], [7]),
-        ("How much ad budget is left?", ["12,000|12000|twelve thousand|12k"], [8]),
-        ("What was cut from this release?", ["tablet"], [9]),
-        ("What does Priya need and by when?", ["copy", "wednesday"], [5]),
-        ("What is failing in staging?", ["push"], [2]),
-        ("How long does the migration take?", ["forty|40"], [6]),
-        ("When will the tablet layout ship?", ["january"], [9]),
-        ("What did I say I would do?", ["push"], [3]),
-        ("What is the CEO's favorite color?", ["not|no |n't|unknown|doesn"], []),
-    ]
+    let call: CallData = loadCases("call")
+    let lines = sampleCall(call).all
+    // Each case: question, expected keywords ("a|b" = either), acceptable source lines ([] = no receipt needed).
+    let qas: [QuestionCase] = loadCases("questions")
+    print("== prompts: \(Prompts.summary)")
     var ok = 0, srcOK = 0, secs = 0.0, tps = 0.0, parsed = 0; var misses: [String] = []
-    for (q, expect, src) in qas {
-        let card = try await answerer.answer(.question, lines: lines, screenText: "", question: q, userName: "Yusuf")
+    for qa in qas {
+        let q = qa.q, expect = qa.expect, src = qa.sources
+        let card = try await answerer.answer(.question, lines: lines, screenText: "", question: q, userName: call.user)
         secs += card.stats.seconds; tps += card.stats.tokensPerSecond
         if JSONRepair.object(card.raw) != nil { parsed += 1 }
         if hit(card.answer, expect) { ok += 1 } else { misses.append("\(q) -> \(card.answer.prefix(100))") }
@@ -173,12 +185,14 @@ func benchAnswer(port: Int, label: String) async throws {
     print("== \(label) (port \(port)) questions: correct \(ok)/\(qas.count), receipts \(srcOK)/\(qas.count), valid JSON \(parsed)/\(qas.count), avg \(f(secs / Double(qas.count)))s, \(f(tps / Double(qas.count), 0)) tok/s")
     for m in misses { print("   x \(m)") }
 
-    // Catch-up, three runs: must name the Friday question, mention something missed, cite line 11.
+    // Catch-up, three runs: "asked" must contain the keywords in call.json ("friday"), something must be
+    // missed, a reply suggested, and the line in call.json (11) cited.
     var cu = 0, cuSecs = 0.0
     for run in 1...3 {
-        let card = try await answerer.answer(.catchUp, lines: lines, screenText: "", userName: "Yusuf")
+        let card = try await answerer.answer(.catchUp, lines: lines, screenText: "", userName: call.user)
         cuSecs += card.stats.seconds
-        let good = hit(card.asked, ["friday"]) && !card.missed.isEmpty && !card.reply.isEmpty && card.sources.contains(11)
+        let good = hit(card.asked, call.catchup.asked) && !card.missed.isEmpty && !card.reply.isEmpty
+            && card.sources.contains(call.catchup.source)
         if good { cu += 1 }
         if run == 1 || !good {
             print("   catch-up #\(run) \(good ? "ok" : "MISS") \(f(card.stats.seconds))s\n     asked:  \(card.asked)\n     missed: \(card.missed)\n     reply:  \(card.reply)\n     sources: \(card.sources)")
@@ -186,7 +200,7 @@ func benchAnswer(port: Int, label: String) async throws {
     }
     print("== \(label) catch-up: \(cu)/3 good, avg \(f(cuSecs / 3))s")
 
-    let notes = try await answerer.answer(.notes, lines: lines, screenText: "", userName: "Yusuf")
+    let notes = try await answerer.answer(.notes, lines: lines, screenText: "", userName: call.user)
     print("== \(label) notes (\(f(notes.stats.seconds))s, sources \(notes.sources)):\n\(notes.answer)\n")
 }
 
@@ -194,32 +208,19 @@ func benchAnswer(port: Int, label: String) async throws {
 
 func benchWatch(port: Int) async throws {
     let watcher = Watcher(client: BonsaiClient(port: port))
-    let context: [(String, String)] = [("Maya", "The design review went fine."), ("Sam", "We still need the API changes merged.")]
-    let cases: [(String, String, Bool)] = [   // speaker, newest line, should it need the user (Yusuf)?
-        ("Maya", "Yusuf, can your team still hit Friday?", true),
-        ("Sam", "What do you think, Yusuf?", true),
-        ("Maya", "Yusuf, are you still there?", true),
-        ("Maya", "Does anyone have concerns about the timeline?", true),
-        ("Sam", "Can everyone confirm they've read the doc?", true),
-        ("Maya", "Priya, where are we on the screenshots?", false),
-        ("Sam", "Sam here, I'll take the migration.", false),
-        ("Maya", "I talked to Yusuf yesterday about the budget.", false),
-        ("Sam", "Why does this keep happening? Anyway, moving on.", false),
-        ("Maya", "The deadline is Friday.", false),
-        ("Priya", "Thanks, Priya here, I sent the copy to marketing.", false),
-        ("Maya", "Priya, did marketing reply?", false),
-        ("Sam", "So what's the takeaway? The takeaway is that caching works.", false),
-        ("Maya", "Yusuf already fixed that last week.", false),
-        ("Sam", "Yusuf, could you share your screen?", true),
-        ("Maya", "Okay, any questions before we wrap up?", true),
-    ]
+    // bench/watch.json: a few context lines, then cases. Each case is the newest line and whether it
+    // should need the user ("want").
+    let data: WatchData = loadCases("watch")
+    let cases = data.cases
+    print("prompts: \(Prompts.summary)")
     var codeOK = 0, modelOK = 0, calls = 0, secs = 0.0; var misses: [String] = []
-    for (speaker, text, want) in cases {
+    for item in cases {
+        let text = item.text, want = item.want
         let tl = Timeline()
-        for c in context { tl.append(.them, c.1, speaker: c.0) }
-        let newest = tl.append(.them, text, speaker: speaker)
-        if Watcher.precheck(newest, userName: "Yusuf") == want { codeOK += 1 }
-        let d = await watcher.watch(tl.all, userName: "Yusuf")
+        for c in data.context { tl.append(.them, c.text, speaker: c.speaker) }
+        let newest = tl.append(.them, text, speaker: item.speaker)
+        if Watcher.precheck(newest, userName: data.user) == want { codeOK += 1 }
+        let d = await watcher.watch(tl.all, userName: data.user)
         if d.usedModel { calls += 1; secs += d.seconds }
         if d.needsUser == want { modelOK += 1 } else { misses.append("\(text) -> got \(d.needsUser) (\(d.reason)), want \(want)") }
     }
@@ -240,11 +241,12 @@ do {
     case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B")
     case "stream":
         // How soon does the user see something when the card streams?
-        let lines = sampleCall().all
+        let call: CallData = loadCases("call")
+        let lines = sampleCall(call).all
         for run in 1...3 {
             let t0 = Date()
             let firstText = Box(), askedDone = Box()
-            let card = try await Answerer().answer(.catchUp, lines: lines, screenText: "", userName: "Yusuf") { partial in
+            let card = try await Answerer().answer(.catchUp, lines: lines, screenText: "", userName: call.user) { partial in
                 if firstText.value == nil, !partial.asked.isEmpty { firstText.value = Date().timeIntervalSince(t0) }
                 if askedDone.value == nil, !partial.missed.isEmpty { askedDone.value = Date().timeIntervalSince(t0) }
             }
@@ -258,8 +260,11 @@ do {
                      "The learning rate is zero point zero one. Homework three is due Thursday at eleven fifty nine p.m."] {
             print("spoke \(text.count) chars in \(f(try await speaker.sayAndWait(text)))s")
         }
+    case "prompts":
+        print("data folder: \(Prompts.dataRoot.path)")
+        for line in Prompts.report() { print(line) }
     default:
-        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] | watch [port] | tts")
+        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] | watch [port] | tts | prompts")
     }
 } catch {
     print("error: \(error.localizedDescription)")
