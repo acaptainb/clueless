@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 5:45 pm ET by Yusuf
+Last updated: Sat Nov 14, 6:05 pm ET by Aziz
 
 ## People
 
@@ -110,6 +110,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T05 Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf | `yusuf/look-away` | Sat 5:45 pm | Written on the MacBook, compile-checked only; needs a live Mac mini test with the webcam |
 | T16 App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf | `yusuf/server-health` | Sat 5:50 pm | Written on the MacBook, compile-checked only |
 | T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
+| T26 Move the prompts and the benchmark test cases out of Swift into data files | Aziz | `aziz/prompts-data` | Sat 6:05 pm | Written on the Windows laptop, not compiled; needs `check.sh` on the Mac mini |
 
 ## Up next
 
@@ -157,7 +158,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 | T20 | Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | Yusuf |
 | T21 | Demo assets, stored locally: a lecture video, a PDF paper, a 2 to 3 minute multi-speaker call | Aziz |
 | T22 | Decide how each person reaches the Mac mini from their laptop (in person, or turn on Remote Login / Screen Sharing) so tests can be started without waiting | both |
-| T26 | Move the prompts and the benchmark test cases out of Swift into data files, so they can be edited (from Windows too) and re-tested without touching Swift code | Aziz |
 | T23 | Record the demo video, under 2 minutes | both |
 | T24 | Final README and the Discord submission | both |
 | T25 | Optional: ask a question by voice instead of typing | Yusuf |
