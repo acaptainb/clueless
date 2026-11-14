@@ -51,6 +51,7 @@ final class AppState: ObservableObject {
     var captureWatchdog: Timer?
     private var transcriber: Transcriber?
     private var speaker: Speaker?
+    private var speech: SpeechQueue?   // speaks a card sentence by sentence while it streams (T07)
     private let answerer = Answerer()
     private let watcher = Watcher()
     private let work = DispatchQueue(label: "clueless.chunks")
@@ -101,6 +102,7 @@ final class AppState: ObservableObject {
             transcriber = try await Transcriber()
             status = "Loading voice…"
             speaker = try? await Speaker()
+            if let speaker { speech = SpeechQueue(speaker: speaker) }
             await refreshHUD()
             status = "Ready"
             await start()
@@ -279,7 +281,9 @@ final class AppState: ObservableObject {
         }
         thinking = true; cardTitle = title; card = nil
         defer { thinking = false }
-        speaker?.stop()
+        let started = Date()
+        var firstSpeech: TimeInterval?
+        speech?.begin()   // also stops anything still being said
 
         // Screen: OCR text and/or a downscaled screenshot, depending on the method setting.
         var screenText = "", image: Data?
@@ -306,14 +310,26 @@ final class AppState: ObservableObject {
         do {
             let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
                                                    question: question, userName: userName) { [weak self] partial in
-                // Show the card growing as tokens arrive.
-                Task { @MainActor in if self?.thinking == true { self?.card = partial } }
+                // Show the card growing as tokens arrive, and start speaking as soon as a sentence is whole.
+                Task { @MainActor in
+                    guard let self, self.thinking else { return }
+                    self.card = partial
+                    if self.speak, self.speech?.update(partial.spoken, final: false) == true, firstSpeech == nil {
+                        firstSpeech = Date().timeIntervalSince(started)
+                    }
+                }
             }
             card = result
             Log.write("[card \(task.rawValue) \(String(format: "%.2f", result.stats.seconds))s, first token \(String(format: "%.2f", result.stats.firstTokenSeconds))s, ocr \(screenText.count) chars, image \(image?.count ?? 0) bytes] \(result.raw)")
             hud.llm = result.stats.seconds; hud.tps = result.stats.tokensPerSecond
             hud.tokens = result.stats.promptTokens + result.stats.outputTokens
-            if speak, !result.spoken.isEmpty { speaker?.say(result.spoken) }
+            // Whatever has not been spoken yet (everything, if nothing streamed).
+            if speak, speech?.update(result.spoken, final: true) == true, firstSpeech == nil {
+                firstSpeech = Date().timeIntervalSince(started)
+            }
+            if let firstSpeech {
+                Log.write("[speech] first words queued \(String(format: "%.2f", firstSpeech))s after the trigger; whole card took \(String(format: "%.2f", Date().timeIntervalSince(started)))s")
+            }
         } catch {
             var failed = Card(task: task)
             failed.answer = "Bonsai did not answer (\(error.localizedDescription)). Clueless is checking the servers; try again in a few seconds."
@@ -324,7 +340,7 @@ final class AppState: ObservableObject {
         }
     }
 
-    func stopSpeaking() { speaker?.stop() }
+    func stopSpeaking() { speech?.stop(); speaker?.stop() }
 
     // MARK: HUD
 
