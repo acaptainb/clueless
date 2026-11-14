@@ -77,6 +77,26 @@ Mac mini in use right now by: nobody
 
 Feature freeze: Sun 2:00 am. Submit by Sun 11:30 am.
 
+### Working timeline (agreed Sat 5:10 pm)
+
+| When | Goal |
+|---|---|
+| Sat until 6:30 pm | Finish M1, Wi-Fi-off run, tag `m1` |
+| Sat 6:30 to 9:30 pm | M2: look-away trigger (A), latency work (B), tag `m2` |
+| Sat 9:30 pm to Sun 12:30 am | M3: call mode live, speaker labels, notes with names, tag `m3` |
+| Sun 12:30 to 2:00 am | Reliability pass: 20-minute soak test, failure handling, then feature freeze |
+| Sun 8:00 to 9:30 am | Demo assets, full rehearsal with Wi-Fi off |
+| Sun 9:30 to 11:00 am | Record the video, final README |
+| Sun 11:30 am | Submit |
+
+### Priorities: fast, reliable, working
+
+Measured on the Mac mini: transcript lag 2.5 s, watcher 1 s, first words of a card 0.8 s without a screenshot
+but 6 s with one, whole card about 6 s. In order of payoff:
+1. Screenshot cost (T08). 2. Prompt cache reuse (T09). 3. Speak the first field early (T07).
+4. App starts and checks the servers itself, capture restarts itself (T16, T17). 5. Soak test and
+Wi-Fi-off rehearsal (T18, T03). Free memory first: the Mac mini was at 27 of 32 GB during the benchmarks.
+
 ## In progress
 
 One line per claimed task. Add your line and push it to `main` BEFORE you start work.
