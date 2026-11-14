@@ -1,7 +1,8 @@
 // Headless benchmarks for the Clueless engine. No capture permissions needed.
 //   clueless-bench chunk  <wav> <reference.txt>     compare live-audio chunking methods
 //   clueless-bench screen <image>                    compare OCR text vs screenshot vs both
-//   clueless-bench answer [port] [label]             question + catch-up test set on one model
+//   clueless-bench answer [port] [label] [cases]     question + catch-up test set on one model
+//                                                    (cases: questions = the 10 in the merge gate, questions_more = 10 harder ones)
 //   clueless-bench watch  [port]                     watcher: code check alone vs code check + 2B
 //   clueless-bench cache  [port]                     prompt cache reuse: classic vs stable prompt layout
 //   clueless-bench names  [port]                     who is "Speaker 1"? names from context (bench/names.json)
@@ -174,12 +175,12 @@ func sampleCall(_ call: CallData) -> Timeline {
     return tl
 }
 
-func benchAnswer(port: Int, label: String) async throws {
+func benchAnswer(port: Int, label: String, cases: String = "questions") async throws {
     let answerer = Answerer(client: BonsaiClient(port: port))
     let call: CallData = loadCases("call")
     let lines = sampleCall(call).all
     // Each case: question, expected keywords ("a|b" = either), acceptable source lines ([] = no receipt needed).
-    let qas: [QuestionCase] = loadCases("questions")
+    let qas: [QuestionCase] = loadCases(cases)
     print("== prompts: \(Prompts.summary)")
     var ok = 0, srcOK = 0, secs = 0.0, tps = 0.0, parsed = 0; var misses: [String] = []
     for qa in qas {
@@ -248,7 +249,8 @@ do {
     case "chunk": try await benchChunk(args[1], args[2])
     case "screen": try await benchScreen(args[1], args.count > 2 ? args[2] : nil)
     case "screencost": try await benchScreenCost(args[1], args.count > 2 ? args[2] : nil, args.count > 3 ? args[3] : nil)
-    case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B")
+    case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B",
+                                         cases: args.count > 3 ? args[3] : "questions")
     case "stream":
         // How soon does the user see something when the card streams?
         let call: CallData = loadCases("call")
@@ -279,7 +281,7 @@ do {
         print("data folder: \(Prompts.dataRoot.path)")
         for line in Prompts.report() { print(line) }
     default:
-        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] | watch [port] | cache [port] | names [port] | speakers <wav> [count] | notes [port] [wav] | tts | prompts | selftest")
+        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] [cases] | watch [port] | cache [port] | names [port] | speakers <wav> [count] | notes [port] [wav] | tts | prompts | selftest")
     }
 } catch {
     print("error: \(error.localizedDescription)")

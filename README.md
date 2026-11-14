@@ -84,7 +84,8 @@ Prompts and test cases are data files, so they can be edited on any machine with
   `answerer_question.txt`, `answerer_catch_up.txt` or `answerer_notes.txt`, depending on the task.
 - The files are read on every request: an edit shows up in the next answer, with no rebuild and no restart.
   If a file is missing or empty, the copy built into `Bonsai.swift` is used.
-- `bench/call.json` is the sample call (line N becomes `L`N), `bench/questions.json` the questions with expected
+- `bench/call.json` is the sample call (line N becomes `L`N), `bench/questions.json` the 10 questions in the merge gate (`bench/questions_more.json` has 10 harder ones:
+  `clueless-bench answer 8080 9B questions_more`), each with expected
   keywords (`"a|b"` means either) and acceptable source lines, `bench/watch.json` the watcher lines with `want`,
   `bench/screen.json` the slide questions.
 - `clueless-bench prompts` prints which prompt files are in use. Then push and run `./scripts/check.sh <branch>`.

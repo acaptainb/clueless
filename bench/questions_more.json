@@ -1,0 +1,12 @@
+[
+  {"q": "Who is waiting on marketing?", "expect": ["priya"], "sources": [5]},
+  {"q": "Why do we need a maintenance window?", "expect": ["migration"], "sources": [6]},
+  {"q": "What day is the release candidate due?", "expect": ["friday"], "sources": [11]},
+  {"q": "Who asked about the App Store screenshots?", "expect": ["maya"], "sources": [4]},
+  {"q": "How much QA time does cutting the tablet layout save?", "expect": ["week"], "sources": [10]},
+  {"q": "What is the first item on the agenda?", "expect": ["checklist|launch"], "sources": [1]},
+  {"q": "Are the API changes merged?", "expect": ["yes|merged"], "sources": [2]},
+  {"q": "What is the twelve thousand dollars for?", "expect": ["ads|advertis"], "sources": [8]},
+  {"q": "Who said they would look at the push service?", "expect": ["you|yusuf"], "sources": [3]},
+  {"q": "What is the release date for the Android app?", "expect": ["not|no |n't|unknown|doesn"], "sources": []}
+]
