@@ -175,6 +175,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T27 `servers.sh start answerer` / `start watcher` / `stop <name>`: one server alone | Aziz | Sat 8:30 pm | `aziz/servers-one` |
 | T10 Test set grown to 20 questions (`bench/questions_more.json`). Real recorded audio still to do, needs the T21 recordings | Aziz | Sat 8:15 pm | `aziz/test-set` |
 | T13 Speaker labels at end of session: `SessionAudio`, `SpeakerLabeler` (SpeakerKit), `Speakers.assign` | Aziz | Sat 8:00 pm | `aziz/call-notes` |
 | T14 Speaker names from context: `NameResolver`, `prompts/names.txt`, `clueless-bench names` | Aziz | Sat 8:00 pm | `aziz/call-notes` |
