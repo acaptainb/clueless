@@ -70,6 +70,7 @@ struct OverlayView: View {
                 Button("Session notes", action: state.notes)
                 Toggle("Speak answers", isOn: $state.speak)
                 Picker("Screen input", selection: $state.screenMethodRaw) {
+                    Text("Auto: screenshot only for visual questions").tag(ScreenMethod.auto.rawValue)
                     Text("Screenshot + OCR text (most accurate)").tag(ScreenMethod.both.rawValue)
                     Text("OCR text only (fastest)").tag(ScreenMethod.ocr.rawValue)
                     Text("Screenshot only").tag(ScreenMethod.image.rawValue)

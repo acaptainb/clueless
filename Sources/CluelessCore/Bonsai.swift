@@ -235,7 +235,8 @@ public struct Card: Sendable {
 }
 
 /// How the screen reaches the model. This is one of the things we benchmark.
-public enum ScreenMethod: String, Sendable, CaseIterable { case ocr, image, both, none }
+/// `auto` = OCR text always, screenshot only when `ScreenPolicy` says the question needs it.
+public enum ScreenMethod: String, Sendable, CaseIterable { case ocr, image, both, none, auto }
 
 public struct Answerer: Sendable {
     public let client: BonsaiClient
