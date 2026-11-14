@@ -1,2 +1,5 @@
 # Both people append to the work log; keep both sides instead of conflicting.
 WORKLOG.md merge=union
+# Data files are read by the Mac build; keep Unix line endings even when edited on Windows.
+prompts/*.txt text eol=lf
+bench/*.json text eol=lf

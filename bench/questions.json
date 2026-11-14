@@ -1,0 +1,12 @@
+[
+  {"q": "When is the database migration happening?", "expect": ["thursday", "ten|10"], "sources": [7]},
+  {"q": "Who owns the migration?", "expect": ["sam"], "sources": [7]},
+  {"q": "How much ad budget is left?", "expect": ["12,000|12000|twelve thousand|12k"], "sources": [8]},
+  {"q": "What was cut from this release?", "expect": ["tablet"], "sources": [9]},
+  {"q": "What does Priya need and by when?", "expect": ["copy", "wednesday"], "sources": [5]},
+  {"q": "What is failing in staging?", "expect": ["push"], "sources": [2]},
+  {"q": "How long does the migration take?", "expect": ["forty|40"], "sources": [6]},
+  {"q": "When will the tablet layout ship?", "expect": ["january"], "sources": [9]},
+  {"q": "What did I say I would do?", "expect": ["push"], "sources": [3]},
+  {"q": "What is the CEO's favorite color?", "expect": ["not|no |n't|unknown|doesn"], "sources": []}
+]
