@@ -222,8 +222,9 @@ final class AppState: ObservableObject {
             guard recording, seconds >= 5, !missed.isEmpty, !thinking,
                   Date().timeIntervalSince(lastWatchTrigger) > 20 else { return }
             lastWatchTrigger = Date()
-            // Cover the whole absence plus some lead-in, so the card has the context of what was missed.
-            let window = min(600, max(90, seconds + 45))
+            // Only the absence plus a short lead-in for context. A wider window made the card summarise
+            // everything said so far instead of what was missed (seen in the Mac mini test).
+            let window = min(600, seconds + 20)
             Task { await run(.catchUp, title: "While you looked away (\(Int(seconds)) s)", window: window) }
         }
     }
