@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:26 pm ET by Aziz
+Last updated: Sat Nov 14, 8:20 pm ET by Aziz
 
 ## People
 
@@ -120,6 +120,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T14 Resolve speaker names from context | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T15 End-of-session notes by speaker, using the names | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T10 Grow the test set to about 20 questions | Aziz | `aziz/test-set` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
+| T27 `servers.sh start answerer` / `start watcher`: start or stop one server alone (asked for by Yusuf for T16) | Aziz | `aziz/servers-one` | Sat 8:20 pm | Written on the Windows laptop, not run; stacked on `aziz/test-set` |
 
 ## Up next
 
