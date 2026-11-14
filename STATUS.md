@@ -117,6 +117,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T15 End-of-session notes by speaker, using the names | Aziz | `aziz/call-notes` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T10 Grow the test set to about 20 questions | Aziz | `aziz/test-set` | Sat 6:25 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
 | T27 `servers.sh start answerer` / `start watcher`: start or stop one server alone (asked for by Yusuf for T16) | Aziz | `aziz/servers-one` | Sat 6:25 pm | Written on the Windows laptop, not run; stacked on `aziz/test-set` |
+| T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Written on the Windows laptop. Slides and PDF checked in a browser there; the audio script has never been run |
 
 ## Up next
 
@@ -177,7 +178,6 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 | T17 Capture restarts itself after a stream error or a 15 s stall. `check.sh` PASS, no false restart in silence; the restart itself has not fired yet, deferred to T28 | Yusuf | Sat 6:45 pm | PR #5 |
 | T16 App starts and health-checks the Bonsai servers. `check.sh` PASS; auto-start and restart after a kill verified on the Mac mini; panel row and Restart button deferred to T28 | Yusuf | Sat 6:45 pm | PR #4 |
 | T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |
-| T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Written on the Windows laptop. Slides and PDF checked in a browser there; the audio script has never been run |
 | Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
 | Team tracking: STATUS.md, WORKLOG.md, workflow rules | Aziz | Sat 5:25 pm | `main` |
 | Answers stream into the card (first words in 0.8 s) | Aziz | Sat 4:58 pm | PR #1 |
