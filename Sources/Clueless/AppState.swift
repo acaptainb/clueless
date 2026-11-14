@@ -12,7 +12,8 @@ final class AppState: ObservableObject {
     @Published var recording = false { didSet { syncPresence() } }
     @Published var status = "Loading models…" { didSet { Log.write("[status] \(status)") } }
     @Published var tail: [TimelineLine] = []
-    @Published var card: Card?
+    // The HUD keeps the numbers of the last finished card (partial cards carry no timings).
+    @Published var card: Card? { didSet { if let stats = card?.stats, stats.seconds > 0 { hud.last = stats } } }
     @Published var cardTitle = ""
     @Published var thinking = false
     @Published var question = ""
@@ -38,6 +39,8 @@ final class AppState: ObservableObject {
         var ramMB = 0
         var online = true
         var answerer = false, watcher = false
+        var answererMB = 0, watcherMB = 0      // memory of the two Bonsai servers
+        var last = BonsaiStats()               // timings of the last finished card
     }
 
     let timeline: Timeline
@@ -338,5 +341,6 @@ final class AppState: ObservableObject {
             }
         }
         if kr == KERN_SUCCESS { hud.ramMB = Int(info.phys_footprint / 1_048_576) }
+        refreshServerMemory()
     }
 }

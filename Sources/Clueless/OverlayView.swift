@@ -113,20 +113,7 @@ struct OverlayView: View {
         }
     }
 
-    private var hud: some View {
-        let h = state.hud
-        return HStack(spacing: 10) {
-            Label(h.online ? "network on (unused)" : "network off", systemImage: h.online ? "wifi" : "wifi.slash")
-                .foregroundStyle(h.online ? Color.secondary : Color.green)
-            Text("stt \(h.stt, specifier: "%.1f")s")
-            Text("ocr \(h.ocr, specifier: "%.1f")s")
-            Text("9B \(h.llm, specifier: "%.1f")s · \(h.tps, specifier: "%.0f") tok/s")
-            Text("\(h.ramMB) MB")
-            Circle().fill(h.answerer ? Color.green : Color.red).frame(width: 6, height: 6).help("Bonsai 9B answerer")
-            Circle().fill(h.watcher ? Color.green : Color.red).frame(width: 6, height: 6).help("Bonsai watcher")
-        }
-        .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary).lineLimit(1)
-    }
+    private var hud: some View { HUDView(hud: state.hud) }
 }
 
 struct CardView: View {
