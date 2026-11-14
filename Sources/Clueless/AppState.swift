@@ -337,8 +337,11 @@ final class AppState: ObservableObject {
         }
 
         await audioFlushed
+        // Default windows are stepped (T09): the first line only changes once a minute, so the Bonsai server
+        // reuses its cache between requests. A window given by the caller (look-away) is kept exact.
+        let step: TimeInterval = window == nil ? 60 : 0
         let window: TimeInterval = window ?? (task == .notes ? 3600 : (task == .catchUp ? 150 : 300))
-        let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45)
+        let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45, step: step)
             .filter { $0.source == .them || $0.source == .me }
         do {
             let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
