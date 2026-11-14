@@ -114,6 +114,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T29 (new) Cards include the last few seconds: on a trigger, transcribe the audio still in the buffer before building the card. Found in the Mac mini look-away test (3 lines counted, 5 in the window) | Yusuf | `yusuf/fresh-catchup` | Sat 6:55 pm | Being written on the MacBook |
 | T20 Finish the HUD: latency per stage, RAM including the servers, tokens per second, network off | Yusuf | `yusuf/hud` | Sat 6:50 pm | Being written on the MacBook (first session; T06 was written in Yusuf's second session) |
 | T06 Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf | `yusuf/receipts` | Sat 6:45 pm | Written on the MacBook, compile-checked only. PR #15 (draft), in the test queue |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
