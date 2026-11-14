@@ -68,11 +68,27 @@ public final class Timeline: @unchecked Sendable {
 
     public var all: [TimelineLine] { lock.lock(); defer { lock.unlock() }; return lines }
 
-    /// Lines from the last `seconds`, capped at `maxLines` (newest kept).
-    public func recent(seconds: TimeInterval, maxLines: Int = 60, now: Date = Date()) -> [TimelineLine] {
+    /// Lines from the last `seconds`, capped at `maxLines` (newest kept). That is the default, `step: 0`:
+    /// the exact window, which callers such as the look-away trigger rely on.
+    ///
+    /// With `step: 60` the first line returned only changes every `step` seconds (and, when the cap is hit, every 10 lines),
+    /// not on every call. Two requests a few seconds apart then start with the same lines, and the Bonsai
+    /// server reuses its evaluation of them instead of reading the whole timeline again. The window is
+    /// then up to `step` seconds longer than asked for. Use it for requests to the answerer.
+    public func recent(seconds: TimeInterval, maxLines: Int = 60, step: TimeInterval = 0, now: Date = Date()) -> [TimelineLine] {
         lock.lock(); defer { lock.unlock() }
-        let cutoff = now.addingTimeInterval(-seconds)
-        return Array(lines.filter { $0.t >= cutoff }.suffix(maxLines))
+        var cutoff = now.addingTimeInterval(-seconds)
+        if step > 0 {
+            cutoff = Date(timeIntervalSince1970: (cutoff.timeIntervalSince1970 / step).rounded(.down) * step)
+        }
+        let inWindow = lines.filter { $0.t >= cutoff }
+        guard inWindow.count > maxLines else { return inWindow }
+        guard step > 0 else { return Array(inWindow.suffix(maxLines)) }
+        // Over the cap: drop from the front up to the next id that is a multiple of 10.
+        let firstKept = inWindow[inWindow.count - maxLines].id
+        let start = ((firstKept + 9) / 10) * 10
+        let trimmed = inWindow.filter { $0.id >= start }
+        return trimmed.isEmpty ? Array(inWindow.suffix(maxLines)) : trimmed
     }
 
     public func last(_ n: Int) -> [TimelineLine] { lock.lock(); defer { lock.unlock() }; return Array(lines.suffix(n)) }

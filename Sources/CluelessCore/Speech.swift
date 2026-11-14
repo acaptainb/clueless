@@ -60,6 +60,8 @@ public struct AudioChunker {
     private var startedAt: Date?
     /// RMS below this over a 200 ms window counts as a pause.
     public var silenceRMS: Float = 0.006
+    /// On a forced cut, how far back from the end to look for a gap between words. 0 cuts at the very end.
+    public var forcedCutSearchSeconds: Double = 1.5
 
     public init(method: ChunkMethod) { self.method = method }
 
@@ -73,7 +75,7 @@ public struct AudioChunker {
         case .fixed(let limit):
             return seconds >= limit ? take() : nil
         case .silence(let minS, let maxS):
-            if seconds >= maxS { return take() }
+            if seconds >= maxS { return takeAtQuietest() }
             if seconds >= minS, Self.rms(buffer.suffix(Self.sampleRate / 5)) < silenceRMS { return take() }
             return nil
         }
@@ -81,6 +83,32 @@ public struct AudioChunker {
 
     /// Emit whatever is left (end of session).
     public mutating func flush() -> Chunk? { buffer.count > Self.sampleRate / 2 ? take() : nil }
+
+    /// Forced cut, when nobody paused before the maximum length. Cutting at the very end splits whatever word
+    /// is being said across two timeline lines. Instead, cut at the quietest 50 ms within the last
+    /// `forcedCutSearchSeconds` (the gap between two words) and carry what follows into the next chunk.
+    private mutating func takeAtQuietest() -> Chunk? {
+        let window = Self.sampleRate / 20
+        let search = Int(forcedCutSearchSeconds * Double(Self.sampleRate))
+        // Keep at least a second before the search area, otherwise just cut at the end.
+        guard search > window, buffer.count > search + Self.sampleRate else { return take() }
+        var bestStart = buffer.count - window
+        var bestRMS = Float.greatestFiniteMagnitude
+        var i = buffer.count - search
+        while i + window <= buffer.count {
+            let level = Self.rms(buffer[i..<(i + window)])
+            if level < bestRMS { bestRMS = level; bestStart = i }
+            i += window / 2
+        }
+        let cut = bestStart + window / 2
+        let rest = Array(buffer[cut...])
+        let restStartedAt = (startedAt ?? Date()).addingTimeInterval(Double(cut) / Double(Self.sampleRate))
+        buffer.removeSubrange(cut...)
+        let chunk = take()            // emits the part before the cut and empties the buffer
+        buffer = rest
+        startedAt = restStartedAt
+        return chunk
+    }
 
     private mutating func take() -> Chunk? {
         defer { buffer.removeAll(keepingCapacity: true) }

@@ -1,0 +1,14 @@
+[
+  {"q": "What is the update rule?", "expect": ["w", "η|eta|learning rate", "∇|gradient|nabla"], "from": "visual", "slide": 3},
+  {"q": "In the example on this slide, what is the new weight?", "expect": ["1.6"], "from": "screen", "slide": 3},
+  {"q": "Which curve diverges, and what is its learning rate?", "expect": ["red", "1.0|1"], "from": "visual", "slide": 4},
+  {"q": "What colour is the curve that converges?", "expect": ["green"], "from": "visual", "slide": 4},
+  {"q": "What batch size is used in the example?", "expect": ["64"], "from": "screen", "slide": 5},
+  {"q": "How many steps are in one epoch?", "expect": ["782"], "from": "screen", "slide": 5},
+  {"q": "When is the homework due?", "expect": ["thursday", "11:59"], "from": "screen", "slide": 6},
+  {"q": "When are office hours this week?", "expect": ["tuesday", "3|three"], "from": "audio", "slide": 1},
+  {"q": "Who first described gradient descent, and when?", "expect": ["cauchy", "1847"], "from": "audio", "slide": 2},
+  {"q": "What should I do if the loss goes up?", "expect": ["divide|reduce|lower|smaller", "ten|10"], "from": "audio", "slide": 4},
+  {"q": "What does the midterm cover, and what can I bring?", "expect": ["1 through 8|one through eight|1 to 8|1-8", "notes"], "from": "audio", "slide": 6},
+  {"q": "What learning rate did the professor say to start with?", "expect": ["0.01"], "from": "audio", "slide": 4}
+]

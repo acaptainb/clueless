@@ -47,6 +47,9 @@ cmake --build vendor/llama.cpp/build-mac -j 8 --target llama-server
 #    TTSKit:     run `argmax-cli tts --text hi --model 0.6b` once, then copy
 #                  ~/Documents/huggingface/models/argmaxinc/ttskit-coreml -> models/argmax/ttskit-coreml
 #                  ~/Documents/huggingface/models/Qwen/Qwen3-0.6B         -> models/argmax/tts-tokenizer
+#    SpeakerKit: run `argmax-cli diarize --audio-path any.wav` once, then copy
+#                  ~/Documents/huggingface/models/argmaxinc/speakerkit-coreml -> models/argmax/speakerkit-coreml
+#                (the app also looks in the download folder itself, so the copy is optional)
 ```
 
 ## Run (offline)
@@ -81,7 +84,8 @@ Prompts and test cases are data files, so they can be edited on any machine with
   `answerer_question.txt`, `answerer_catch_up.txt` or `answerer_notes.txt`, depending on the task.
 - The files are read on every request: an edit shows up in the next answer, with no rebuild and no restart.
   If a file is missing or empty, the copy built into `Bonsai.swift` is used.
-- `bench/call.json` is the sample call (line N becomes `L`N), `bench/questions.json` the questions with expected
+- `bench/call.json` is the sample call (line N becomes `L`N), `bench/questions.json` the 10 questions in the merge gate (`bench/questions_more.json` has 10 harder ones:
+  `clueless-bench answer 8080 9B questions_more`), each with expected
   keywords (`"a|b"` means either) and acceptable source lines, `bench/watch.json` the watcher lines with `want`,
   `bench/screen.json` the slide questions.
 - `clueless-bench prompts` prints which prompt files are in use. Then push and run `./scripts/check.sh <branch>`.

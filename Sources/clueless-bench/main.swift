@@ -1,8 +1,14 @@
 // Headless benchmarks for the Clueless engine. No capture permissions needed.
 //   clueless-bench chunk  <wav> <reference.txt>     compare live-audio chunking methods
 //   clueless-bench screen <image>                    compare OCR text vs screenshot vs both
-//   clueless-bench answer [port] [label]             question + catch-up test set on one model
+//   clueless-bench answer [port] [label] [cases]     question + catch-up test set on one model
+//                                                    (cases: questions = the 10 in the merge gate, questions_more = 10 harder ones)
 //   clueless-bench watch  [port]                     watcher: code check alone vs code check + 2B
+//   clueless-bench cache  [port]                     prompt cache reuse: classic vs stable prompt layout
+//   clueless-bench names  [port]                     who is "Speaker 1"? names from context (bench/names.json)
+//   clueless-bench speakers <wav> [count]            SpeakerKit speaker turns on a recorded call
+//   clueless-bench notes  [port] [wav]               end-of-session notes with speaker labels and names
+//   clueless-bench selftest                          logic checks, no servers or models needed
 //   clueless-bench tts                               speech latency
 //   clueless-bench prompts                           which prompt files are in use (needs no servers)
 //
@@ -51,10 +57,14 @@ func benchChunk(_ wav: String, _ refPath: String) async throws {
     let methods: [ChunkMethod] = [
         .fixed(seconds: 3), .fixed(seconds: 5), .fixed(seconds: 10),
         .silence(minSeconds: 2, maxSeconds: 8), .silence(minSeconds: 3, maxSeconds: 12), .silence(minSeconds: 5, maxSeconds: 15),
+        // Last row: the same 2 to 8 s method with the old forced cut at the very end (T19 comparison).
+        .silence(minSeconds: 2, maxSeconds: 8),
     ]
     print(pad("method", 18), pad("WER", 7), pad("chunks", 7), pad("avg len", 8), pad("stt/chunk", 10), pad("worst lag", 10), "avg lag")
-    for method in methods {
+    for (index, method) in methods.enumerated() {
         var chunker = AudioChunker(method: method)
+        let hardCut = index == methods.count - 1
+        if hardCut { chunker.forcedCutSearchSeconds = 0 }
         var text: [String] = [], lens: [Double] = [], stt: [Double] = []
         let step = 1600   // 100 ms, like live capture buffers
         var i = 0
@@ -73,7 +83,7 @@ func benchChunk(_ wav: String, _ refPath: String) async throws {
         // A word waits at most (chunk length + transcribe time) before it shows up; on average half the chunk.
         let lag = zip(lens, stt).map { $0 + $1 }
         let avgLag = zip(lens, stt).map { $0 / 2 + $1 }.reduce(0, +) / Double(max(lens.count, 1))
-        print(pad(method.name, 18), pad(f(wer(text.joined(separator: " "), ref) * 100, 1) + "%", 7),
+        print(pad(hardCut ? "sil-2-8s hard cut" : method.name, 18), pad(f(wer(text.joined(separator: " "), ref) * 100, 1) + "%", 7),
               pad("\(lens.count)", 7), pad(f(lens.reduce(0, +) / Double(max(lens.count, 1)), 1) + "s", 8),
               pad(f(stt.reduce(0, +) / Double(max(stt.count, 1))) + "s", 10),
               pad(f(lag.max() ?? 0, 1) + "s", 10), f(avgLag, 1) + "s")
@@ -165,12 +175,12 @@ func sampleCall(_ call: CallData) -> Timeline {
     return tl
 }
 
-func benchAnswer(port: Int, label: String) async throws {
+func benchAnswer(port: Int, label: String, cases: String = "questions") async throws {
     let answerer = Answerer(client: BonsaiClient(port: port))
     let call: CallData = loadCases("call")
     let lines = sampleCall(call).all
     // Each case: question, expected keywords ("a|b" = either), acceptable source lines ([] = no receipt needed).
-    let qas: [QuestionCase] = loadCases("questions")
+    let qas: [QuestionCase] = loadCases(cases)
     print("== prompts: \(Prompts.summary)")
     var ok = 0, srcOK = 0, secs = 0.0, tps = 0.0, parsed = 0; var misses: [String] = []
     for qa in qas {
@@ -239,7 +249,8 @@ do {
     case "chunk": try await benchChunk(args[1], args[2])
     case "screen": try await benchScreen(args[1], args.count > 2 ? args[2] : nil)
     case "screencost": try await benchScreenCost(args[1], args.count > 2 ? args[2] : nil, args.count > 3 ? args[3] : nil)
-    case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B")
+    case "answer": try await benchAnswer(port: args.count > 1 ? Int(args[1])! : 8080, label: args.count > 2 ? args[2] : "9B",
+                                         cases: args.count > 3 ? args[3] : "questions")
     case "stream":
         // How soon does the user see something when the card streams?
         let call: CallData = loadCases("call")
@@ -254,6 +265,11 @@ do {
             print("run \(run): first words on screen \(f(firstText.value ?? -1))s, 'asked' complete \(f(askedDone.value ?? -1))s, whole card \(f(card.stats.seconds))s | asked: \(card.asked.prefix(60)) | sources \(card.sources)")
         }
     case "watch": try await benchWatch(port: args.count > 1 ? Int(args[1])! : 8082)
+    case "cache": try await benchCache(port: args.count > 1 ? Int(args[1])! : 8080)
+    case "names": try await benchNames(port: args.count > 1 ? Int(args[1])! : 8080)
+    case "speakers": try await benchSpeakers(args[1], args.count > 2 ? Int(args[2]) : nil)
+    case "notes": try await benchNotes(port: args.count > 1 ? Int(args[1])! : 8080, wav: args.count > 2 ? args[2] : nil)
+    case "selftest": runSelftest()
     case "tts":
         let speaker = try await Speaker()
         print("TTSKit load: \(f(speaker.loadSeconds))s")
@@ -265,7 +281,7 @@ do {
         print("data folder: \(Prompts.dataRoot.path)")
         for line in Prompts.report() { print(line) }
     default:
-        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] | watch [port] | tts | prompts")
+        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] [cases] | watch [port] | cache [port] | names [port] | speakers <wav> [count] | notes [port] [wav] | tts | prompts | selftest")
     }
 } catch {
     print("error: \(error.localizedDescription)")

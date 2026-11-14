@@ -3,3 +3,9 @@ WORKLOG.md merge=union
 # Data files are read by the Mac build; keep Unix line endings even when edited on Windows.
 prompts/*.txt text eol=lf
 bench/*.json text eol=lf
+# Demo scripts are parsed on the Mac; the PDF is binary.
+demo/**/*.txt text eol=lf
+demo/**/*.json text eol=lf
+demo/**/*.html text eol=lf
+scripts/*.py text eol=lf
+*.pdf binary
