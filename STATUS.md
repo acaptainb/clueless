@@ -60,7 +60,7 @@ Code is not done until it has passed on the Mac mini. After pushing a branch, ad
 STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
 once the PR is merged.
 
-Mac mini in use right now by: nobody
+Mac mini in use right now by: Yusuf (yusuf/speak-early, T07, run by the Mac mini session)
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
