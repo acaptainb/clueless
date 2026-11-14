@@ -1,0 +1,2 @@
+# Both people append to the work log; keep both sides instead of conflicting.
+WORKLOG.md merge=union

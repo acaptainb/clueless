@@ -25,6 +25,7 @@ Everything runs on-device with Wi-Fi off:
 
 Measurements and the method comparisons behind each default are in [BENCHMARKS.md](BENCHMARKS.md).
 The full plan is in [BRIEF.md](BRIEF.md).
+Who is working on what is in [STATUS.md](STATUS.md); the history is in [WORKLOG.md](WORKLOG.md).
 
 ## Setup (once, online)
 
