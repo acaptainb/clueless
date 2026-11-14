@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:00 pm ET by Aziz
+Last updated: Sat Nov 14, 5:45 pm ET by Yusuf
 
 ## People
 
@@ -105,7 +105,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| (nothing claimed) | | | | |
+| T05 Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf | `yusuf/look-away` | Sat 5:45 pm | Written on the MacBook, compile-checked only; needs a live Mac mini test with the webcam |
 
 ## Up next
 
@@ -122,7 +122,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### M2 Catch-up
 | ID | Task | Suggested |
 |---|---|---|
-| T05 | Look-away trigger: webcam + Vision face detection; looking away then back fires a catch-up | Yusuf |
 | T06 | Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf |
 | T07 | Start speaking the first field as soon as it is complete, not after the whole card | Yusuf |
 
