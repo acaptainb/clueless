@@ -11,6 +11,7 @@ start() {
   # than plain PQ2_0 with identical answers on our test set (see BENCHMARKS.md).
   nohup "$BIN" -m "$M/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf" --mmproj "$M/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf" \
     --spec-type draft-mtp --spec-draft-n-max 2 \
+    ${ANSWERER_IMAGE_MAX_TOKENS:+--image-max-tokens "$ANSWERER_IMAGE_MAX_TOKENS"} \
     -ngl 99 -fa on -c "${ANSWERER_CTX:-8192}" -np 1 --host 127.0.0.1 --port 8080 --offline \
     > "$RUN/answerer.log" 2>&1 & echo $! > "$RUN/answerer.pid"
   # Watcher, text only. 4B by default: 16/16 on our watcher test set vs 13-14/16 for 2B (see BENCHMARKS.md).

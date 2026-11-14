@@ -1,0 +1,8 @@
+[
+  {"q": "What is the learning rate in this example?", "expect": ["0.01"]},
+  {"q": "What batch size is used?", "expect": ["64"]},
+  {"q": "When is the homework due?", "expect": ["thursday"]},
+  {"q": "What happens if the learning rate is too large?", "expect": ["diverge"]},
+  {"q": "Write the update rule shown on the slide.", "expect": ["w", "η|eta|learning rate", "∇|gradient|nabla"]},
+  {"q": "Which course and professor is this?", "expect": ["4780", "weinberger"]}
+]

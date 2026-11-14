@@ -1,0 +1,25 @@
+{
+  "user": "Yusuf",
+  "context": [
+    {"speaker": "Maya", "text": "The design review went fine."},
+    {"speaker": "Sam", "text": "We still need the API changes merged."}
+  ],
+  "cases": [
+    {"speaker": "Maya", "text": "Yusuf, can your team still hit Friday?", "want": true},
+    {"speaker": "Sam", "text": "What do you think, Yusuf?", "want": true},
+    {"speaker": "Maya", "text": "Yusuf, are you still there?", "want": true},
+    {"speaker": "Maya", "text": "Does anyone have concerns about the timeline?", "want": true},
+    {"speaker": "Sam", "text": "Can everyone confirm they've read the doc?", "want": true},
+    {"speaker": "Maya", "text": "Priya, where are we on the screenshots?", "want": false},
+    {"speaker": "Sam", "text": "Sam here, I'll take the migration.", "want": false},
+    {"speaker": "Maya", "text": "I talked to Yusuf yesterday about the budget.", "want": false},
+    {"speaker": "Sam", "text": "Why does this keep happening? Anyway, moving on.", "want": false},
+    {"speaker": "Maya", "text": "The deadline is Friday.", "want": false},
+    {"speaker": "Priya", "text": "Thanks, Priya here, I sent the copy to marketing.", "want": false},
+    {"speaker": "Maya", "text": "Priya, did marketing reply?", "want": false},
+    {"speaker": "Sam", "text": "So what's the takeaway? The takeaway is that caching works.", "want": false},
+    {"speaker": "Maya", "text": "Yusuf already fixed that last week.", "want": false},
+    {"speaker": "Sam", "text": "Yusuf, could you share your screen?", "want": true},
+    {"speaker": "Maya", "text": "Okay, any questions before we wrap up?", "want": true}
+  ]
+}

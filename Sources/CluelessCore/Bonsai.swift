@@ -153,7 +153,10 @@ public struct Watcher: Sendable {
                           options: [.regularExpression, .caseInsensitive]) != nil
     }
 
-    static let system = """
+    /// Live text: prompts/watcher.txt. The built-in copy below is only used when that file cannot be read.
+    static var system: String { Prompts.load("watcher") ?? builtInSystem }
+
+    static let builtInSystem = """
     You watch a live meeting transcript for one user. Decide whether the NEWEST line needs that user to respond now.
     Reply with JSON only: {"needs_user": true|false, "reason": "name"|"question"|"none"}
 
@@ -232,31 +235,39 @@ public struct Card: Sendable {
 }
 
 /// How the screen reaches the model. This is one of the things we benchmark.
-public enum ScreenMethod: String, Sendable, CaseIterable { case ocr, image, both, none }
+/// `auto` = OCR text always, screenshot only when `ScreenPolicy` says the question needs it.
+public enum ScreenMethod: String, Sendable, CaseIterable { case ocr, image, both, none, auto }
 
 public struct Answerer: Sendable {
     public let client: BonsaiClient
     public init(client: BonsaiClient = BonsaiClient(port: BonsaiClient.answererPort)) { self.client = client }
 
+    /// Live text: prompts/answerer_common.txt plus prompts/answerer_<task>.txt, joined by one newline.
+    /// The built-in copies below are only used when those files cannot be read.
     static func system(_ task: AnswerTask) -> String {
-        let common = """
-        You are Clueless, a private on-device copilot. You get a numbered timeline of what was just said \
-        (lines look like "[L12 14:03:10] Speaker: text") and what is on the user's screen.
-        Use only that material. If it does not contain the answer, say so briefly. Be concise and concrete.
-        "sources" must list the L-numbers of the timeline lines you actually used (integers only, most relevant first). \
-        Use [] if you only used the screen.
-        Reply with JSON only.
-        """
+        let common = Prompts.load("answerer_common") ?? builtInCommon
+        let part = Prompts.load("answerer_" + task.rawValue) ?? builtInTask(task)
+        return common + "\n" + part
+    }
+
+    static let builtInCommon = """
+    You are Clueless, a private on-device copilot. You get a numbered timeline of what was just said \
+    (lines look like "[L12 14:03:10] Speaker: text") and what is on the user's screen.
+    Use only that material. If it does not contain the answer, say so briefly. Be concise and concrete.
+    "sources" must list the L-numbers of the timeline lines you actually used (integers only, most relevant first). \
+    Use [] if you only used the screen.
+    Reply with JSON only.
+    """
+
+    static func builtInTask(_ task: AnswerTask) -> String {
         switch task {
         case .question:
-            return common + """
-
+            return """
             The user asks a question about the lecture or document. Answer in 1 to 3 short sentences, plain text, no markdown.
             JSON shape: {"answer": "...", "sources": [12, 9]}
             """
         case .catchUp:
-            return common + """
-
+            return """
             The user lost the thread and needs to be caught up right now.
             - "asked": the question or request most recently directed at the user, in one sentence. "" if nobody asked them anything.
             - "missed": the 1 to 2 most important things said recently, in one or two sentences.
@@ -264,8 +275,7 @@ public struct Answerer: Sendable {
             JSON shape: {"asked": "...", "missed": "...", "reply": "...", "sources": [215, 212]}
             """
         case .notes:
-            return common + """
-
+            return """
             Write end-of-session notes: decisions, action items with owner, and open questions. Attribute by speaker. \
             Plain text with short lines, no markdown.
             JSON shape: {"answer": "...", "sources": [3, 8, 14]}
