@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 6:31 pm ET by Aziz
+Last updated: Sat Nov 14, 6:30 pm ET by Aziz
 
 ## People
 
@@ -115,13 +115,6 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 | T16 App starts and health-checks the Bonsai servers itself; clear message when one is down | Yusuf | `yusuf/server-health` | Sat 5:50 pm | Written on the MacBook, compile-checked only |
 | T17 Restart capture automatically if the stream stops | Yusuf | `yusuf/capture-restart` | Sat 5:55 pm | Written on the MacBook, compile-checked only |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
-| T09 Keep the prompt prefix identical between requests so the server reuses its cache | Aziz | `aziz/prompt-cache` | Sat 6:40 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T19 Forced cut at 8 s can split a word: cut at the quietest point instead | Aziz | `aziz/word-cut` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T13 Speaker labels at end of session with SpeakerKit on the recorded system audio | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T14 Resolve speaker names from context | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T15 End-of-session notes by speaker, using the names | Aziz | `aziz/call-notes` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T10 Grow the test set to about 20 questions | Aziz | `aziz/test-set` | Sat 7:05 pm | Written on the Windows laptop, not compiled; stacked on `aziz/engine-combined` |
-| T27 `servers.sh start answerer` / `start watcher`: start or stop one server alone (asked for by Yusuf for T16) | Aziz | `aziz/servers-one` | Sat 8:20 pm | Written on the Windows laptop, not run; stacked on `aziz/test-set` |
 
 ## Up next
 
@@ -177,13 +170,13 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
-| T27 `servers.sh start answerer` / `start watcher` / `stop <name>`: one server alone | Aziz | Sat 8:30 pm | `aziz/servers-one` |
-| T10 Test set grown to 20 questions (`bench/questions_more.json`). Real recorded audio still to do, needs the T21 recordings | Aziz | Sat 8:15 pm | `aziz/test-set` |
-| T13 Speaker labels at end of session: `SessionAudio`, `SpeakerLabeler` (SpeakerKit), `Speakers.assign` | Aziz | Sat 8:00 pm | `aziz/call-notes` |
-| T14 Speaker names from context: `NameResolver`, `prompts/names.txt`, `clueless-bench names` | Aziz | Sat 8:00 pm | `aziz/call-notes` |
-| T15 Session notes by speaker with names: `SessionNotes.make`; notes prompt asks for decisions, action items, open questions | Aziz | Sat 8:00 pm | `aziz/call-notes` |
-| T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 7:15 pm | `aziz/word-cut` |
-| T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 7:00 pm | `aziz/prompt-cache` |
+| T27 `servers.sh start answerer` / `start watcher` / `stop <name>`: one server alone | Aziz | Sat 6:30 pm | `aziz/servers-one` |
+| T10 Test set grown to 20 questions (`bench/questions_more.json`). Real recorded audio still to do, needs the T21 recordings | Aziz | Sat 6:30 pm | `aziz/test-set` |
+| T13 Speaker labels at end of session: `SessionAudio`, `SpeakerLabeler` (SpeakerKit), `Speakers.assign` | Aziz | Sat 6:30 pm | `aziz/call-notes` |
+| T14 Speaker names from context: `NameResolver`, `prompts/names.txt`, `clueless-bench names` | Aziz | Sat 6:30 pm | `aziz/call-notes` |
+| T15 Session notes by speaker with names: `SessionNotes.make`; notes prompt asks for decisions, action items, open questions | Aziz | Sat 6:30 pm | `aziz/call-notes` |
+| T19 Forced audio cut lands in the gap between words, not mid-word | Aziz | Sat 6:30 pm | `aziz/word-cut` |
+| T09 Prompt order that the server can reuse from its cache; `clueless-bench cache` measures it | Aziz | Sat 6:30 pm | `aziz/prompt-cache` |
 | T26 Prompts in `prompts/*.txt`, benchmark cases in `bench/*.json`; edits need no Swift change | Aziz | Sat 6:30 pm | `aziz/prompts-data` |
 | T21 Demo assets: a multi-speaker call, a narrated slide lecture and a PDF, all generated locally (no downloads) | Aziz | `aziz/demo-assets` | Sat 6:26 pm | Written on the Windows laptop. Slides and PDF checked in a browser there; the audio script has never been run |
 | Mac mini test workflow: `scripts/check.sh`, test queue, laptops are code-only, per-person folders | Aziz | Sat 5:40 pm | `yusuf/mac-mini-workflow` |
