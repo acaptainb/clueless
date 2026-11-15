@@ -32,6 +32,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                              backing: .buffered, defer: false)
         panel.title = "Clueless"
         panel.titlebarAppearsTransparent = true
+        // T49, visual only: the name is a wordmark in the panel header, and the panel is always dark so
+        // text stays readable over the blurred desktop behind it.
+        panel.titleVisibility = .hidden
+        panel.appearance = NSAppearance(named: .darkAqua)
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.hidesOnDeactivate = false

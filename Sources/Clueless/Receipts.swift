@@ -122,7 +122,7 @@ struct ScreenReceiptRow: View {
 
     private func picture(_ image: NSImage) -> some View {
         Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.15)))
+            .clipShape(RoundedRectangle(cornerRadius: Style.innerRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Style.innerRadius, style: .continuous).stroke(Style.hairline))
     }
 }
