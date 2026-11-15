@@ -25,15 +25,15 @@ the submission. Nothing left needs new features.
 | Look-away catch-up (the hero feature) | 4 of 4 cards, 31 short glances ignored, no crash in 2.5 h | Yes (Aziz, Sat 10:45 pm) |
 | Spoken answers | Queued 1.7 to 2.0 s after the trigger; never transcribed back, in six runs | Yes (Aziz) |
 | Wi-Fi off (hard rule 3) | Ran fine with Wi-Fi off; Wi-Fi is the Mac mini's only connection | Yes (Aziz). Repeat once on the final build for timings |
-| Live capture after tonight's changes | 54 lines, none doubled, question 2.9 s, catch-up 3.7 s | No (unattended run, screen locked) |
+| Live capture after tonight's changes | 54 lines, none doubled, question 2.9 s, catch-up 3.7 s | No (unattended). A later card read the real main display (2661 OCR characters) |
 | A question typed while a card is being written | Answered afterwards (test hook, Sun 2:02 am); it was dropped before | No |
 | Name trigger waits for the question | Card has the question; 5.2 s wait when the name comes first, 0 s otherwise | No |
 | Hotkeys ⌥Space, ⌥C, ⌥S, ⌥V | All four register with macOS | Never pressed by a person |
 | Spoken question (⌥V) | Wired | Never tried with a voice |
 | Call mode with a microphone, microphone gate | Wired | No: needs sound, postponed to the morning |
 | Servers restart themselves | Seen after a scripted kill | The warning row has not been looked at |
-| Capture restarts itself | Has never fired; a test hook for it is queued | No |
-| Soak | 22 min through the file hook: no crash, memory flat. Live soak started Sun 2:06 am | |
+| Capture restarts itself | Has never fired; a test hook for it is running | No |
+| Soak | 22 min through the file hook and 20 min 45 s with live capture (Sun 2:06 am): no crash, no capture stall, 405 lines, transcription 0.4 s per chunk at both ends, memory flat over the last six minutes (app 0.38 GB, 9B 1.65 GB, 4B 0.42 GB) | Unattended |
 
 ## Open pull requests and who decides
 
@@ -110,6 +110,9 @@ for the timings and for the default Hugging Face folder.**
 and the webcam on. Note the three memory numbers in the HUD at the start and the end.
 
 ## 2. Video, under 2 minutes (T23)
+
+Before recording: close every window that shows anything private and delete `sessions/` (receipts save
+whatever is on screen; on Sun 2:19 am one caught a credentials file open in an editor).
 
 Record the Mac mini's screen with Wi-Fi off and the Wi-Fi icon visible in the menu bar. Judging order is
 use of Bonsai and Argmax first, so say which model does what while it happens.

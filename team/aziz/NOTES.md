@@ -37,3 +37,5 @@ T08 is written and waiting for the Mac mini (below). Next engine tasks by payoff
 - This Windows laptop has no Swift and no Python; Node is installed. Git name and email were unset here and are now set for this repo only.
 - After T26 merges, prompt experiments for T08 and T09 are edits to `prompts/*.txt` and `bench/*.json`: no Swift needed from this laptop.
 - `scripts/servers.sh start answerer` / `start watcher` (start one server alone) was asked for by Yusuf in the work log for T16; not done.
+
+- Sun 9:40 am: `aziz/engine-fixes` (T43, PR #43) and `aziz/app-fixes` (T44, PR #44) are pushed and queued, never compiled. Likeliest build errors: `Speech.swift` (`withTaskCancellationHandler { } onCancel: { }` with a throwing operation; `Task { [self] in ... }` in `say`). If `stopPlayback` turns out to cut speech that nobody stopped, the one line to remove is the `stopOutput()` call in `Speaker.stop()` (the cancellation handler alone still stops a sentence in progress). If the `lsof` line in `servers.sh` misbehaves on the Mac, `listener()` printing nothing makes the script fall back to the health check, which is the path tested on Windows.
