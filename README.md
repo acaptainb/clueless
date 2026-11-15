@@ -38,10 +38,10 @@ showed the behaviour in the log. "Seen live" means a person sat in front of it.
 
 | Milestone | State |
 |---|---|
-| M0 smoke tests | Done, except the run with Wi-Fi off. A socket check with everything running showed only 127.0.0.1 connections |
-| M1 study mode | Checked on our own demo material: paper questions 11/11, lecture slide questions 7/7, questions about what the lecturer said 5/5. Live transcription seen live. Hotkeys, a typed question and listening to the spoken answer: not yet tried by a person |
+| M0 smoke tests | Done. The whole app was run with Wi-Fi off (the test machine's only network connection) and worked; a socket check with everything running showed only 127.0.0.1 connections |
+| M1 study mode | Checked on our own demo material: paper questions 11/11, lecture slide questions 7/7, questions about what the lecturer said 5/5. Live transcription and spoken answers seen live. Hotkeys and a typed question: not yet tried by a person |
 | M2 catch-up | The look-away trigger was seen live: four look-aways of 6 to 9 s each gave a card (first word after 0.8 to 1.0 s), 31 short glances gave none, no crash in 2.5 hours. Screenshot receipts are checked |
-| M3 call mode | Checked on the demo call played into the app: the name trigger fires and the notes name all three speakers. Not yet tried live with a microphone |
+| M3 call mode | Checked on the demo call played into the app: the name trigger fires, waits for the end of the question and puts it in the card; the notes name all three speakers. Not yet tried live with a microphone |
 | Reliability | Server auto-start and restart after a kill are checked. A 22-minute session played into the app: no crash, memory flat (app about 0.35 GB, 9B 1.2 GB, 4B 0.3 GB). Capture restart has not fired in a test yet |
 
 Measurements and the method comparisons behind each default are in [BENCHMARKS.md](BENCHMARKS.md).
@@ -89,7 +89,7 @@ build takes a few minutes while Core ML compiles the Whisper model.
 
 - **⌥Space** ask a question about the screen or what was said
 - **⌥C** catch me up
-- **⌥S** stop speaking
+- **⌥S** stop speaking (after the sentence being spoken)
 - **⌥V** ask a question out loud (study mode); it stops by itself when you pause
 
 ## Testing a branch (Mac mini only)
