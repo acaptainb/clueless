@@ -1,6 +1,6 @@
 # Sunday: what is left, in order
 
-Written Sun Nov 15, 1:55 am by Yusuf's MacBook session (updated 2:50 am), from STATUS.md, WORKLOG.md and the in-person log
+Written Sun Nov 15, 1:18 am by Yusuf's MacBook session (updated 1:40 am), from STATUS.md, WORKLOG.md and the in-person log
 of Sat night. Deadline: submit by 11:30 am (hard cutoff 12:00 noon). Feature freeze 2:00 am: after that,
 fixes only.
 
@@ -36,7 +36,7 @@ for minutes on the first launch). Write each result into WORKLOG.md as you go.
 2. T01: the answer is read aloud, and what it says does not show up as a transcript line.
 3. T07: the voice starts before the card is finished, sentences in order, none twice. ⌥S: the voice
    finishes the sentence it is in and does not start again (stopping mid-word needs a core change,
-   see the work log, Sun 2:40 am). A new question cuts off the old speech the same way.
+   see the work log, Sun 1:32 am). A new question cuts off the old speech the same way.
    T41: paste a question with Cmd+V. Type a question while a look-away card is still being written:
    it is answered when that card is done, not lost.
 4. T02: ⌥C gives a catch-up card.
@@ -104,7 +104,7 @@ indicator (red dot) in frame: the project does not hide from screen sharing.
 - Both names.
 - "Clueless is a private copilot that watches your screen and listens to your calls and lectures
   entirely on your Mac, and catches you up the moment you lose the thread."
-- https://github.com/acaptainb/clueless (public; checked Sun 1:50 am)
+- https://github.com/acaptainb/clueless (public; checked Sun 1:18 am)
 - The video.
 
 Before posting: README status table updated from the in-person results (it still says Sat 8 pm), the
