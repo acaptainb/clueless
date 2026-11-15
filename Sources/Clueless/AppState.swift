@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import SwiftUI
 import Network
 import CluelessCore
@@ -18,6 +19,7 @@ final class AppState: ObservableObject {
     @Published var thinking = false
     @Published var question = ""
     @Published var focusQuestion = 0          // bumped by the hotkey to focus the field
+    @Published var listening = false          // recording a spoken question (T25)
     @Published var hud = HUD()
     @Published var presence = Presence.Status.off
     /// Shown as a warning row in the panel while a Bonsai server is down, loading or being started.
@@ -44,6 +46,10 @@ final class AppState: ObservableObject {
     }
 
     let timeline: Timeline
+    /// Where this session's screen receipts are saved (next to the session's JSONL file).
+    let snapshotDir: URL
+    /// The screen the current card was answered from; shown under the card's receipts (Receipts.swift).
+    @Published var screenReceipt: ScreenReceipt?
     let capture = Capture()
     // Capture supervision state (used by the extension in CaptureRestart.swift).
     var wantRecording = false          // the user wants capture on; false after pause
@@ -62,6 +68,7 @@ final class AppState: ObservableObject {
     private var sttChain: Task<Void, Never>?
     private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
     let webcam = Presence()            // not private: the camera test window reads its frames (T31)
+    private let voice = VoiceRecorder()
     private var webcamOn = false
     /// True while the camera test window is open: keeps the webcam on even when paused (CameraTestView.swift).
     var cameraTest = false { didSet { syncPresence() } }
@@ -74,6 +81,7 @@ final class AppState: ObservableObject {
     init() {
         let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
         timeline = Timeline(jsonl: Paths.sessions.appendingPathComponent("\(stamp).jsonl"))
+        snapshotDir = Paths.sessions.appendingPathComponent("\(stamp)-screens")
         pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in self?.hud.online = path.status == .satisfied }
         }
@@ -111,6 +119,14 @@ final class AppState: ObservableObject {
             await refreshHUD()
             status = "Ready"
             await start()
+            // Test hook: CLUELESS_TEST_VOICE=<seconds> starts a voice question that long after launch, so the
+            // microphone path can be checked from the log without anyone pressing the hotkey.
+            if let delay = Double(ProcessInfo.processInfo.environment["CLUELESS_TEST_VOICE"] ?? "") {
+                Task { [weak self] in
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1e9))
+                    self?.toggleVoiceQuestion()
+                }
+            }
         } catch {
             status = "Could not load speech models: \(error.localizedDescription)"
         }
@@ -282,7 +298,9 @@ final class AppState: ObservableObject {
                 let missed = timeline.recent(seconds: Date().timeIntervalSince(since), maxLines: 200)
                     .filter { $0.source == .them }
                 Log.write("[presence] back after \(Int(seconds)) s, \(missed.count) lines missed")
-                guard !missed.isEmpty, !thinking else { return }
+                // One short line is not worth a card, and with almost nothing to go on the model makes one up.
+                let enough = missed.count >= 2 || missed.reduce(0) { $0 + $1.text.count } >= 60
+                guard enough, !thinking else { return }
                 lastWatchTrigger = Date()
                 // Only the absence plus a short lead-in for context. A wider window made the card summarise
                 // everything said so far instead of what was missed (seen in the Mac mini test).
@@ -309,6 +327,7 @@ final class AppState: ObservableObject {
     private func run(_ task: AnswerTask, title: String, question: String? = nil,
                      window: TimeInterval? = nil) async {
         guard !thinking else { return }
+        screenReceipt = nil   // it belonged to the previous card
         if startingServers {
             var waiting = Card(task: task)
             waiting.answer = "The Bonsai servers are still starting. Try again in a few seconds."
@@ -339,7 +358,8 @@ final class AppState: ObservableObject {
             screenText = input.text
             image = input.image
             hud.ocr = input.ocrSeconds
-            if !screenText.isEmpty { timeline.append(.screen, String(screenText.prefix(300))) }
+            // Receipt: save the screenshot and record it on the timeline with `snapshot` set (T06).
+            keepReceipt(of: shot, text: screenText)
         }
 
         await audioFlushed
@@ -347,7 +367,10 @@ final class AppState: ObservableObject {
         // reuses its cache between requests. A window given by the caller (look-away) is kept exact.
         let step: TimeInterval = window == nil ? 60 : 0
         let window: TimeInterval = window ?? (task == .notes ? 3600 : (task == .catchUp ? 150 : 300))
-        let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45, step: step)
+        // A question may be about anything in the window, so it gets more lines than a catch-up. With 45,
+        // a question at the end of a 162 s lecture could not see its first lines (seen on the Mac mini).
+        let maxLines = task == .notes ? 200 : (task == .question ? 120 : 45)
+        let lines = timeline.recent(seconds: window, maxLines: maxLines, step: step)
             .filter { $0.source == .them || $0.source == .me }
         do {
             let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
@@ -383,6 +406,71 @@ final class AppState: ObservableObject {
     }
 
     func stopSpeaking() { speech?.stop(); speaker?.stop() }
+
+    // MARK: ask by voice (T25)
+
+    /// Start listening for a spoken question, or finish one that is being recorded. Study mode only:
+    /// in a call the other people would hear the question, and the microphone is already "You".
+    func toggleVoiceQuestion() {
+        if listening { finishVoiceQuestion(); return }
+        guard mode == .study, transcriber != nil, !thinking else { return }
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
+            Task { @MainActor in
+                guard granted else {
+                    self.voiceProblem("Clueless needs the microphone to hear a spoken question. Allow it in System Settings › Privacy & Security › Microphone.")
+                    return
+                }
+                self.stopSpeaking()   // do not record our own voice
+                self.voice.onAutoStop = { [weak self] in self?.finishVoiceQuestion() }
+                do {
+                    try self.voice.start()
+                    self.listening = true
+                    Log.write("[voice] listening")
+                } catch {
+                    self.voiceProblem("Could not start the microphone: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    private func finishVoiceQuestion() {
+        guard listening else { return }
+        listening = false
+        let samples = voice.stop()
+        Log.write("[voice] \(voice.summary)")
+        guard samples.count > 8_000, let transcriber else {   // under half a second: nothing was said
+            Log.write("[voice] nothing heard")
+            return
+        }
+        // Whisper runs one job at a time: wait for the chunks already queued, and make later chunks wait for this.
+        let previous = sttChain
+        let t0 = Date()
+        let job = Task { () -> String? in
+            await previous?.value
+            return try? await transcriber.transcribe(samples)
+        }
+        sttChain = Task { _ = await job.value }
+        Task {
+            let text = (await job.value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            Log.write("[voice \(String(format: "%.2f", Date().timeIntervalSince(t0)))s, \(String(format: "%.1f", Double(samples.count) / 16_000))s of audio] \(text)")
+            guard text.count > 2 else { return }
+            // If a card is being written (a look-away catch-up can fire at the same moment), wait for it
+            // instead of losing the question.
+            let waitStart = Date()
+            while thinking, Date().timeIntervalSince(waitStart) < 20 {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            question = text
+            ask()
+        }
+    }
+
+    private func voiceProblem(_ message: String) {
+        Log.write("[voice] \(message)")
+        var problem = Card(task: .question)
+        problem.answer = message
+        cardTitle = "Ask by voice"; card = problem
+    }
 
     // MARK: HUD
 

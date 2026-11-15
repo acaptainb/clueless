@@ -17,7 +17,10 @@ struct OverlayView: View {
             if let card = state.card {
                 // As tall as the card needs, up to a limit; a longer card (session notes) scrolls
                 // instead of pushing the HUD off the panel.
-                ScrollView { CardView(title: state.cardTitle, card: card, timeline: state.timeline) }
+                ScrollView {
+                    CardView(title: state.cardTitle, card: card, timeline: state.timeline,
+                             screen: state.screenReceipt, toggleScreen: { state.screenReceipt?.enlarged.toggle() })
+                }
                     .frame(maxHeight: 380)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -94,10 +97,19 @@ struct OverlayView: View {
 
     private var askBar: some View {
         HStack(spacing: 6) {
-            TextField("Ask about what's on screen or what was said  (⌥Space)", text: $state.question)
+            TextField(state.listening ? "Listening… ask your question out loud" : "Ask about what's on screen or what was said  (⌥Space)",
+                      text: $state.question)
                 .textFieldStyle(.roundedBorder)
                 .focused($questionFocused)
                 .onSubmit(state.ask)
+            // Ask by voice: the microphone goes through Argmax WhisperKit, on this Mac.
+            Button(action: state.toggleVoiceQuestion) { Image(systemName: state.listening ? "mic.fill" : "mic") }
+                .buttonStyle(.borderless)
+                .foregroundStyle(state.listening ? Color.red : Color.secondary)
+                .disabled(state.mode == .call)
+                .help(state.mode == .call ? "Asking by voice is off in call mode: the call would hear you"
+                      : state.listening ? "Listening. Stops by itself when you pause, or click to finish"
+                      : "Ask by voice  (⌥V)")
             Button("Catch me up", action: state.catchUp)
                 .keyboardShortcut("k", modifiers: [.command])
                 .help("What did I miss?  (⌥C)")
@@ -132,6 +144,11 @@ struct CardView: View {
     let title: String
     let card: Card
     let timeline: Timeline
+    /// The screen this card was answered from, if one was read (T06).
+    var screen: ScreenReceipt? = nil
+    /// Enlarges or shrinks the screen receipt. The flag lives in AppState: `@State` does not compile on
+    /// the Mac mini (Command Line Tools only, no Xcode).
+    var toggleScreen: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -143,7 +160,7 @@ struct CardView: View {
             } else {
                 Text(card.answer).font(.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
-            if !card.sources.isEmpty {
+            if !card.sources.isEmpty || screen != nil {
                 Divider()
                 Text("RECEIPTS").font(.caption2.bold()).foregroundStyle(.secondary)
                 ForEach(card.sources.prefix(4), id: \.self) { id in
@@ -152,6 +169,8 @@ struct CardView: View {
                             .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                     }
                 }
+                // The model cites spoken lines by number; the screen it was shown is listed with them.
+                if let screen { ScreenReceiptRow(receipt: screen, toggle: toggleScreen) }
             }
         }
         .padding(12)

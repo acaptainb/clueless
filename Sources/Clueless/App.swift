@@ -59,6 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             HotKey(keyCode: UInt32(kVK_ANSI_C), modifiers: UInt32(optionKey)) { [weak self] in self?.state.catchUp() },
             HotKey(keyCode: UInt32(kVK_ANSI_S), modifiers: UInt32(optionKey)) { [weak self] in self?.state.stopSpeaking() },
+            HotKey(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(optionKey)) { [weak self] in self?.state.toggleVoiceQuestion() },
         ]
     }
 

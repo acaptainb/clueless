@@ -20,6 +20,16 @@ T08 is written and waiting for the Mac mini (below). Next engine tasks by payoff
 
 - Mac mini queue for my part, in order (Sat 7:10 pm): 1 measure T26/T08 on `main`; 2 `aziz/demo-assets` (T21); 3 `main` after PR #8 (T09, T19, T13 to T15, T10, T27), which was merged before any Mac mini run, so `main` may not build until that run; 4 T04 on `main`. PRs #9, #10, #11 were closed in favour of #8.
 
+- `aziz/camera-test` (T31, camera test window) @ 542c0b2. Never compiled. No PR opened yet. Likeliest build errors, all in `Sources/Clueless/CameraTestView.swift` unless said:
+  - `CameraTestWindow.init`: stored `let` properties set before `super.init()` in a `@MainActor` `NSObject` subclass; if the compiler objects, make `window` and `model` `private var ... !` or give them default values.
+  - Actor isolation: `state.webcam.onFrame = { ... sink?.ingest(frame) }` calls a `@MainActor` method from a plain closure (same pattern as `webcam.onStatus` in `AppState.init`); `DispatchQueue.main.async { ... CameraTestWindow.current ... }` in `windowWillClose`. Fix either by wrapping the body in `Task { @MainActor in ... }` or `MainActor.assumeIsolated { ... }`.
+  - `Text(...).font(.callout.monospacedDigit().weight(...))` in `row`: if `weight` is not accepted there, drop it.
+  - `TimelineView(.periodic(from: Date(), by: 0.5))` and the `some View` helper functions that start with `let` statements then `return`: if the return type cannot be inferred, wrap the body in `Group { }` or mark it `@ViewBuilder` and remove `return`.
+  - `Presence.swift`: `face?.yaw?.doubleValue` and `CVPixelBufferGetWidth(pixels)` in the new `Frame(...)` call.
+  - `AppState.swift`: `var cameraTest = false { didSet { syncPresence() } }` calls a private method from a property observer (same as `recording`).
+  Likeliest run-time problems: the face box upside down or mirrored (the maths is in `CameraPreviewView.redraw`: flip with `1 - box.maxY` for y, or `1 - box.maxX` for x if the preview layer mirrors); a black preview (the preview layer is created before the session has its camera input; if it stays black, create `CameraPreviewView` only after the first frame arrives); yaw jumping in 45 degree steps and pitch always missing would mean Vision is using an old request revision, fixed in `Presence.swift` with `request.revision = VNDetectFaceRectanglesRequestRevision3`.
+  Merge order: `yusuf/look-away-start` (T30) and `yusuf/voice-ask` (T25) touch the same files; merge `main` into this branch after they land.
+
 ## Ideas and things to remember
 
 - This Windows laptop has no Swift and no Python; Node is installed. Git name and email were unset here and are now set for this repo only.

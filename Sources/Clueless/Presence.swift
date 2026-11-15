@@ -18,11 +18,16 @@ struct PresenceTracker {
     var backAfter: TimeInterval = 0.6
 
     private(set) var away = false
+    /// Nothing counts as an absence until the user has been seen facing the screen once. Without this
+    /// the seconds before the camera delivers its first usable frame looked like "away, then back".
+    private var seen = false
     private var awayStart: Date?
     /// Start of the current run of observations that disagree with `away`.
     private var disagreeStart: Date?
 
     mutating func update(attending: Bool, at now: Date) -> Event? {
+        if attending { seen = true }
+        guard seen else { return nil }
         if attending != away { disagreeStart = nil; return nil }   // observation matches the state
         let start = disagreeStart ?? now
         disagreeStart = start

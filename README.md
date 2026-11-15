@@ -14,14 +14,33 @@ Everything runs on-device with Wi-Fi off:
 - Apple Vision OCR reads the screen text. ScreenCaptureKit captures screen and audio.
 - A recording indicator is always visible. Clueless does not hide from screen sharing.
 
+## What it does
+
+- **Catch me up.** Look away from the screen and back, press ⌥C, or get called on by name in a call: a card says
+  what you were asked, what you missed and what you could say. The look-away trigger uses the webcam with Apple
+  Vision face detection; an eye icon shows whenever the webcam is in use.
+- **Ask.** Type a question (⌥Space) or ask it out loud (⌥V). The answer uses the last few minutes of transcript
+  and what is on the screen.
+- **Receipts.** Every card lists the transcript lines it used, with speaker and time, and the screenshot it read.
+- **Spoken answers.** The card streams in and is read aloud from its first complete sentence. ⌥S stops it.
+- **Call mode.** The microphone is "You", system audio is everyone else. Session notes at the end.
+- **It looks after itself.** The app starts the Bonsai servers if they are not running, restarts them if the
+  answerer dies, and restarts capture if the stream stops. A row in the panel says so when something is down.
+- **HUD.** The bottom of the panel shows network on or off, each Bonsai server with its memory, and the time each
+  stage took: speech to text, OCR, watcher, first word, whole card, tokens per second, prompt cache reuse.
+
 ## Status
+
+Sat Nov 14, 8 pm. "Checked" means the build and the benchmark gate passed on the test machine and a scripted run
+showed the behaviour in the log. "Not yet tried by a person" means nobody has sat in front of it yet.
 
 | Milestone | State |
 |---|---|
-| M0 smoke tests | Done, except the Wi-Fi-off run |
-| M1 study mode | Live system-audio transcription and screen questions work; cards stream in. Spoken answers and hotkeys not yet verified live |
-| M2 catch-up | Hotkey catch-up card with receipts works; look-away trigger not built |
-| M3 call mode | Microphone = You and the watcher trigger are wired; untested live. Notes exist; speaker names not built |
+| M0 smoke tests | Done, except the run with Wi-Fi off. A socket check showed only 127.0.0.1 connections |
+| M1 study mode | Live system-audio transcription, screen questions, streaming cards and early speech are checked. Hotkeys and listening to the spoken answers: not yet tried by a person |
+| M2 catch-up | Hotkey catch-up, the look-away trigger (simulated absence) and screenshot receipts are checked. A real head turn at the webcam: not yet tried by a person |
+| M3 call mode | Microphone = You and the watcher trigger are wired; speaker labels and names are being tested. Not yet tried live |
+| Reliability | Server auto-start and restart after a kill are checked. Capture restart has not fired in a test yet |
 
 Measurements and the method comparisons behind each default are in [BENCHMARKS.md](BENCHMARKS.md).
 The full plan is in [BRIEF.md](BRIEF.md).
@@ -55,17 +74,21 @@ cmake --build vendor/llama.cpp/build-mac -j 8 --target llama-server
 ## Run (offline)
 
 ```sh
-./scripts/servers.sh start      # Bonsai 9B on :8080, 4B on :8082, localhost only
 ./scripts/make_app.sh run       # builds build/Clueless.app and launches it
 ```
 
-Grant Screen Recording (and Microphone for call mode) when macOS asks, then relaunch. The app is signed so that
+The app starts the two Bonsai servers itself (9B on :8080, 4B on :8082, localhost only) and shows a row in the
+panel while they load. To run them by hand: `./scripts/servers.sh start | stop | status`.
+
+Grant Screen Recording when macOS asks, then relaunch. Microphone is asked for in call mode and the first time
+you ask by voice; Camera is asked for by the look-away trigger (it can be turned off in the menu). The app is signed so that
 the permission survives rebuilds. The first launch of a new
 build takes a few minutes while Core ML compiles the Whisper model.
 
 - **⌥Space** ask a question about the screen or what was said
 - **⌥C** catch me up
 - **⌥S** stop speaking
+- **⌥V** ask a question out loud (study mode); it stops by itself when you pause
 
 ## Testing a branch (Mac mini only)
 
@@ -94,9 +117,11 @@ Prompts and test cases are data files, so they can be edited on any machine with
 
 ```
 Sources/CluelessCore   timeline, Bonsai client, watcher, answerer, chunked transcription, OCR, speech
-Sources/Clueless       the app: ScreenCaptureKit capture, floating panel, hotkeys, HUD
+Sources/Clueless       the app: ScreenCaptureKit capture and its restart, floating panel, hotkeys, HUD,
+                       webcam presence, server supervision, speech queue, voice questions, receipts
 Sources/clueless-bench headless benchmarks (no permissions needed)
-scripts/               servers.sh, make_app.sh, smoke_bonsai.py
+scripts/               servers.sh, make_app.sh, check.sh, make_demo_assets.py, smoke_bonsai.py
+demo/                  demo assets generated locally: a multi-speaker call, a narrated lecture, a PDF
 prompts/               the prompt text for the watcher and the answerer, one .txt file each
 bench/                 benchmark test cases as JSON: sample call, questions, watcher lines, slide questions
 ```
