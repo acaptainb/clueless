@@ -30,6 +30,8 @@ T08 is written and waiting for the Mac mini (below). Next engine tasks by payoff
   Likeliest run-time problems: the face box upside down or mirrored (the maths is in `CameraPreviewView.redraw`: flip with `1 - box.maxY` for y, or `1 - box.maxX` for x if the preview layer mirrors); a black preview (the preview layer is created before the session has its camera input; if it stays black, create `CameraPreviewView` only after the first frame arrives); yaw jumping in 45 degree steps and pitch always missing would mean Vision is using an old request revision, fixed in `Presence.swift` with `request.revision = VNDetectFaceRectanglesRequestRevision3`.
   Merge order: `yusuf/look-away-start` (T30) and `yusuf/voice-ask` (T25) touch the same files; merge `main` into this branch after they land.
 
+- `aziz/camera-test` eye tracking @ e09f731 (after the first version was already running on the Mac mini). Never compiled. Likeliest build errors in `Sources/Clueless/EyeGaze.swift`: `request.results?.first` and `found.landmarks` (types from `VNDetectFaceLandmarksRequest`); the nested `func inPicture` using `box`; the `for (outline, pupil) in [(...), (...)]` tuple array with `guard ..., let pupil`. In `CameraTestView.swift`: the `switch` that sets `text` and `color` in `eyeLabel`; `outlines.addLines(between: outline.map(place))` in `redraw`. Likeliest run-time problems: Vision returns no pupils at 640x480 (then raise the preset in `Presence.configure` while testing); left / right sign is in picture terms and the preview is not mirrored; up / down is noisy because the eyelids follow the pupil.
+
 ## Ideas and things to remember
 
 - This Windows laptop has no Swift and no Python; Node is installed. Git name and email were unset here and are now set for this repo only.
