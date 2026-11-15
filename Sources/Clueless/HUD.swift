@@ -57,7 +57,7 @@ struct HUDView: View {
     private var statusRow: some View {
         HStack(spacing: 8) {
             Label(hud.online ? "network on" : "network off", systemImage: hud.online ? "wifi" : "wifi.slash")
-                .foregroundStyle(hud.online ? Color.secondary : Color.green)
+                .foregroundStyle(hud.online ? Color.secondary : Style.good)
                 .help(hud.online ? "The network is on but unused: Clueless only talks to 127.0.0.1. Turn Wi-Fi off and everything keeps working."
                       : "No network. Everything you see is running on this Mac.")
             Spacer(minLength: 0)
@@ -65,11 +65,11 @@ struct HUDView: View {
             server("watcher", up: hud.watcher, mb: hud.watcherMB, help: "Bonsai 2 watcher on port 8082")
             Text("app \(memory(hud.ramMB))").help("Clueless itself, including the Argmax speech models")
             if total > 0 {
-                Text("= \(memory(total))").foregroundStyle(.primary)
+                Text("= \(memory(total))").foregroundStyle(.secondary)
                     .help("Memory in use by Clueless and both Bonsai servers together")
             }
         }
-        .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+        .font(Style.hudStatus).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
     }
 
     private var total: Int {
@@ -84,7 +84,7 @@ struct HUDView: View {
 
     private func server(_ name: String, up: Bool, mb: Int, help: String) -> some View {
         HStack(spacing: 3) {
-            Circle().fill(up ? Color.green : Color.red).frame(width: 6, height: 6)
+            Circle().fill(up ? Style.good : Style.recording).frame(width: 6, height: 6)
             Text(mb > 0 ? "\(name) \(memory(mb))" : name)
         }
         .help(help + (up ? "" : " (not running)"))
@@ -92,8 +92,8 @@ struct HUDView: View {
 
     private func tile(_ label: String, _ value: String, _ help: String) -> some View {
         VStack(spacing: 1) {
-            Text(value).font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundStyle(.primary)
-            Text(label).font(.system(size: 8)).foregroundStyle(.secondary)
+            Text(value).font(Style.hudValue).foregroundStyle(.secondary)
+            Text(label).font(Style.hudLabel).foregroundStyle(.tertiary)
         }
         .lineLimit(1)
         .frame(maxWidth: .infinity)

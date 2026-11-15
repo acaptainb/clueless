@@ -28,8 +28,7 @@ enum CameraTestState: Equatable {
 
     var color: NSColor {
         switch self {
-        case .unavailable, .waiting: return .systemGray
-        case .noPerson: return .systemRed
+        case .unavailable, .waiting, .noPerson: return .systemGray
         case .distracted: return .systemOrange
         case .focused: return .systemGreen
         }
@@ -101,15 +100,19 @@ struct CameraTestView: View {
         let shown = current(now: now)
         let frame = shown == .waiting || shown == .unavailable ? nil : model.frame
         let tracking = model.tracking
-        return HStack(alignment: .top, spacing: 14) {
-            VStack(spacing: 8) {
+        let shape = RoundedRectangle(cornerRadius: Style.tileRadius, style: .continuous)
+        return HStack(alignment: .top, spacing: Style.padding) {
+            VStack(spacing: 0) {
                 // Normal view: the picture only. The face box and the eyes are drawn in the tracking view.
+                // The border follows the state; the state label is a glass pill over the bottom of the picture.
                 CameraPreview(session: state.webcam.previewSession, box: tracking ? frame?.box : nil,
                               eyes: tracking ? frame?.eyes : nil,
                               imageSize: frame?.imageSize ?? .zero, color: shown.color)
                     .aspectRatio(4.0 / 3.0, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                labelRow(shown)
+                    .clipShape(shape)
+                    .overlay(shape.stroke(Color(nsColor: shown.color), lineWidth: 3))
+                    .overlay(alignment: .bottom) { statePill(shown).padding(.bottom, 10) }
+                    .overlay(alignment: .topTrailing) { viewButton.padding(8) }
                 Spacer(minLength: 0)
             }
             if tracking {
@@ -120,7 +123,7 @@ struct CameraTestView: View {
                     }
                     if let frame, frame.faces > 1 {
                         Text("\(frame.faces) faces visible. Only the largest (boxed) is used.")
-                            .font(.callout.bold()).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                            .font(.callout.bold()).foregroundStyle(Style.warning).fixedSize(horizontal: false, vertical: true)
                     }
                     if let frame, frame.faces > 0 { eyeLabel(frame) }
                     numbers(frame: frame, now: now)
@@ -128,29 +131,33 @@ struct CameraTestView: View {
                     Text("Apple Vision face detection on this Mac; nothing is saved or sent.")
                         .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(width: 290)
+                .padding(Style.tilePadding)
+                .frame(width: 300)
+                .glass()
             }
         }
         .padding(10)
+        .background(PanelBackground())
     }
 
-    /// The one large label, and the eye button that switches between the normal and the tracking view.
-    private func labelRow(_ shown: CameraTestState) -> some View {
-        HStack(spacing: 8) {
-            Text(shown.title)
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .frame(maxWidth: .infinity)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: shown.color)))
-            Button(action: model.toggleTracking) {
-                Image(systemName: model.tracking ? "eye.fill" : "eye").font(.title3)
-            }
-            .buttonStyle(.borderless)
+    /// The one large label: a glass pill tinted with the state colour.
+    private func statePill(_ shown: CameraTestState) -> some View {
+        Text(shown.title)
+            .font(Style.stateLabel)
+            .foregroundStyle(.white)
+            .shadow(color: Color.black.opacity(0.5), radius: 2)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+            .padding(.horizontal, 16).padding(.vertical, 7)
+            .glass(cornerRadius: 20, tint: Color(nsColor: shown.color))
+            .padding(.horizontal, 10)
+    }
+
+    /// The eye button: switches between the normal and the tracking view.
+    private var viewButton: some View {
+        Button(action: model.toggleTracking) { Image(systemName: model.tracking ? "eye.fill" : "eye") }
+            .buttonStyle(GlassIconButtonStyle(symbol: model.tracking ? Style.accent : nil))
             .help(model.tracking ? "Hide the tracking details" : "Show the tracking details: face box, eyes and numbers")
-        }
     }
 
     private func numbers(frame: Presence.Frame?, now: Date) -> some View {
@@ -193,7 +200,7 @@ struct CameraTestView: View {
             Text(name).font(.callout).foregroundStyle(.secondary)
             Spacer(minLength: 6)
             Text(value).font(.callout.monospacedDigit().weight(over ? .bold : .regular))
-                .foregroundStyle(over ? Color.orange : Color.primary)
+                .foregroundStyle(over ? Style.warning : Color.primary)
                 .multilineTextAlignment(.trailing)
         }
     }
@@ -349,9 +356,9 @@ final class CameraTestWindow: NSObject, NSWindowDelegate {
     private weak var state: AppState?
     private(set) var closed = false
 
-    /// Content sizes: the normal view is a 320 x 240 picture and the label; the tracking view adds the numbers.
-    static let normalSize = NSSize(width: 340, height: 318)
-    static let trackingSize = NSSize(width: 760, height: 580)
+    /// Content sizes: the normal view is a 320 x 240 picture with the label on it; the tracking view adds the numbers.
+    static let normalSize = NSSize(width: 340, height: 260)
+    static let trackingSize = NSSize(width: 790, height: 600)
 
     init(state: AppState) {
         self.state = state
@@ -364,6 +371,7 @@ final class CameraTestWindow: NSObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         // Stays above other windows like the panel, so it can sit beside it during a recording.
         window.level = .floating
+        window.appearance = NSAppearance(named: .darkAqua)   // T49: dark like the panel
         // Deliberately NOT hidden from screen sharing: sharingType stays at its default.
         window.delegate = self
         let hosting = NSHostingView(rootView: CameraTestView(state: state, model: model))

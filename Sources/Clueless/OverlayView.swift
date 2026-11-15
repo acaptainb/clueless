@@ -8,7 +8,7 @@ struct OverlayView: View {
     @FocusState private var questionFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Style.gap) {
             header
             if let issue = state.serverIssue { serverRow(issue) }
             transcript
@@ -27,44 +27,51 @@ struct OverlayView: View {
             }
             hud
         }
-        .padding(14)
+        .padding(Style.padding)
         .frame(width: 420)
         // Take the natural height and tell the panel, which resizes to fit. Before this the content
         // could be taller than the window and overflowed at both ends, hiding the HUD.
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight($0) }
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(.regularMaterial)
+        .background(PanelBackground())
         .onChange(of: state.focusQuestion) { questionFocused = true }
     }
 
     // Always-visible recording indicator: Clueless never hides that it is capturing.
     private var header: some View {
         HStack(spacing: 8) {
-            Circle().fill(state.recording ? Color.red : Color.gray).frame(width: 10, height: 10)
-            // Visible whenever the webcam is in use for the look-away trigger.
-            if state.presence != .off {
-                Image(systemName: state.presence == .present ? "eye" : (state.presence == .away ? "eye.slash" : "video.slash"))
-                    .font(.caption)
-                    .foregroundStyle(state.presence == .away ? Color.orange : Color.secondary)
-                    .help(state.presence == .present ? "Webcam on: you are facing the screen"
-                          : state.presence == .away ? "Webcam on: you looked away. Clueless will catch you up when you are back"
-                          : "Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
+            Circle().fill(state.recording ? Style.recording : Style.off).frame(width: 10, height: 10)
+                .shadow(color: state.recording ? Style.recording.opacity(0.8) : Color.clear, radius: 4)
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) {
+                    Text("Clueless").font(Style.wordmark)
+                    // Visible whenever the webcam is in use for the look-away trigger.
+                    if state.presence != .off {
+                        Image(systemName: state.presence == .present ? "eye" : (state.presence == .away ? "eye.slash" : "video.slash"))
+                            .font(.caption)
+                            .foregroundStyle(state.presence == .away ? Style.warning : Color.secondary)
+                            .help(state.presence == .present ? "Webcam on: you are facing the screen"
+                                  : state.presence == .away ? "Webcam on: you looked away. Clueless will catch you up when you are back"
+                                  : "Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
+                    }
+                }
+                Text(state.recording ? "Recording screen + audio · on this Mac only" : state.status)
+                    .font(Style.status).foregroundStyle(.secondary).lineLimit(2)
             }
-            // Opens and closes the camera window (T48): the live picture with Focused / Distracted / No person.
-            Button(action: state.toggleCameraWindow) { Image(systemName: state.cameraTest ? "video.fill" : "video") }
-                .buttonStyle(.borderless)
-                .help(state.cameraTest ? "Close the camera window" : "Show the camera window: what the webcam sees")
-            Text(state.recording ? "Recording screen + audio · on this Mac only" : state.status)
-                .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            Spacer()
+            Spacer(minLength: 4)
             Picker("", selection: $state.mode) {
                 ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented).frame(width: 110).labelsHidden()
             .onChange(of: state.mode) { state.modeChanged() }
+            // Opens and closes the camera window (T48): the live picture with Focused / Distracted / No person.
+            Button(action: state.toggleCameraWindow) { Image(systemName: state.cameraTest ? "video.fill" : "video") }
+                .buttonStyle(GlassIconButtonStyle(symbol: state.cameraTest ? Style.accent : nil))
+                .help(state.cameraTest ? "Close the camera window" : "Show the camera window: what the webcam sees")
             Button(action: state.toggle) { Image(systemName: state.recording || state.restartingCapture ? "pause.fill" : "play.fill") }
-                .buttonStyle(.borderless).help(state.recording || state.restartingCapture ? "Pause capture" : "Resume capture")
+                .buttonStyle(GlassIconButtonStyle())
+                .help(state.recording || state.restartingCapture ? "Pause capture" : "Resume capture")
         }
     }
 
@@ -72,32 +79,36 @@ struct OverlayView: View {
     private func serverRow(_ issue: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             if state.startingServers { ProgressView().controlSize(.small) }
-            else { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange) }
+            else { Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Style.warning) }
             Text(issue).font(.caption).fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             if state.serverCanRestart { Button("Restart", action: state.restartServers).controlSize(.small) }
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.orange.opacity(0.12)))
+        .background(RoundedRectangle(cornerRadius: Style.innerRadius, style: .continuous).fill(Style.warning.opacity(0.14)))
     }
 
+    // Speaker labels as small coloured tags; the newest line is the strongest, older ones fade slightly.
     private var transcript: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if state.tail.isEmpty {
+        let lines = state.tail
+        return VStack(alignment: .leading, spacing: 5) {
+            if lines.isEmpty {
                 Text(state.recording ? "Listening… the transcript shows up here." : state.status)
                     .font(.callout).foregroundStyle(.tertiary)
             }
-            ForEach(state.tail) { line in
+            ForEach(lines) { line in
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(line.label).font(.caption2.bold())
-                        .foregroundStyle(line.source == .me ? Color.accentColor : Color.secondary)
-                        .frame(width: 44, alignment: .leading)
+                    SpeakerTag(text: line.label, color: line.source == .me ? Style.accent : Color.secondary)
+                        .frame(width: 58, alignment: .leading)
                     Text(line.text).font(.callout).lineLimit(3)
                 }
+                .opacity(line.id == lines.last?.id ? 1 : 0.72)
             }
         }
+        .padding(Style.tilePadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .glass()
     }
 
     private var askBar: some View {
@@ -109,14 +120,15 @@ struct OverlayView: View {
                 .onSubmit(state.ask)
             // Ask by voice: the microphone goes through Argmax WhisperKit, on this Mac.
             Button(action: state.toggleVoiceQuestion) { Image(systemName: state.listening ? "mic.fill" : "mic") }
-                .buttonStyle(.borderless)
-                .foregroundStyle(state.listening ? Color.red : Color.secondary)
+                .buttonStyle(GlassIconButtonStyle(symbol: state.listening ? Style.recording : nil))
                 .disabled(state.mode == .call)
+                .opacity(state.mode == .call ? 0.4 : 1)
                 .help(state.mode == .call ? "Asking by voice is off in call mode: the call would hear you"
                       : state.listening ? "Listening. Stops by itself when you pause, or click to finish"
                       : "Ask by voice  (⌥V)")
             Button("Catch me up", action: state.catchUp)
                 .keyboardShortcut("k", modifiers: [.command])
+                .buttonStyle(.borderedProminent).tint(Style.accent)
                 .help("What did I miss?  (⌥C)")
             Menu {
                 Button("Session notes", action: state.notes)
@@ -132,8 +144,10 @@ struct OverlayView: View {
                     Text("Screenshot only").tag(ScreenMethod.image.rawValue)
                 }
                 Button("Your name: \(state.userName)…") { state.editUserName() }
-            } label: { Image(systemName: "ellipsis.circle") }
-                .menuStyle(.borderlessButton).frame(width: 28)
+            } label: { Image(systemName: "ellipsis").font(Style.icon) }
+                .menuStyle(.borderlessButton).menuIndicator(.hidden)
+                .frame(width: Style.iconButton, height: Style.iconButton)
+                .glass(cornerRadius: Style.iconButton / 2)
         }
     }
 
@@ -161,7 +175,7 @@ struct CardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline).lineLimit(2)
+            Text(title).font(Style.cardTitle).lineLimit(2)
             if card.task == .catchUp {
                 row("You were asked", card.asked.isEmpty ? "Nothing directed at you." : card.asked)
                 row("You missed", card.missed)
@@ -171,7 +185,7 @@ struct CardView: View {
             }
             if !card.sources.isEmpty || screen != nil {
                 Divider()
-                Text("RECEIPTS").font(.caption2.bold()).foregroundStyle(.secondary)
+                SectionLabel(text: "Receipts")
                 ForEach(card.sources.prefix(4), id: \.self) { id in
                     if let line = named[id] ?? timeline.line(id: id) {
                         Text("\(line.clockTime)  \(line.label): \(line.text)")
@@ -182,15 +196,21 @@ struct CardView: View {
                 if let screen { ScreenReceiptRow(receipt: screen, toggle: toggleScreen) }
             }
         }
-        .padding(12)
+        .padding(Style.tilePadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.06)))
+        .glass()
     }
 
+    // "You could say" is the line the user acts on: it gets the accent tint.
     private func row(_ label: String, _ text: String, highlight: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased()).font(.caption2.bold()).foregroundStyle(highlight ? Color.accentColor : Color.secondary)
+        let shape = RoundedRectangle(cornerRadius: Style.innerRadius, style: .continuous)
+        return VStack(alignment: .leading, spacing: 3) {
+            SectionLabel(text: label, color: highlight ? Style.accent : Color.secondary)
             Text(text).font(.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
         }
+        .padding(highlight ? 8 : 0)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(shape.fill(highlight ? Style.accent.opacity(0.18) : Color.clear))
+        .overlay(shape.stroke(highlight ? Style.accent.opacity(0.45) : Color.clear, lineWidth: 1))
     }
 }
