@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 9:50 am ET by Yusuf
+Last updated: Sun Nov 15, 9:55 am ET by Aziz
 
 ## People
 
@@ -113,6 +113,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 |---|---|---|---|---|
 | T43 (new) Three engine bugs found by reading `main @ 8d9727e`: Option+S and a voice question do not stop audio that is already playing (`Speaker.stop` only cancels a task the speech queue never sets); call notes drop the user's earlier lines when the call has more than 200 lines; `servers.sh start` with one server already up launches both and overwrites the pid file of the healthy one | Aziz | `aziz/engine-fixes` | Sun 1:55 am | Pushed (PR #43), written on the Windows laptop, never compiled; in the test queue. One call-site line in `Sources/Clueless/CallNotes.swift` (Yusuf's folder) goes with the core change |
 | T44 (new) Three app bugs found by reading `main @ 8d9727e`: Pause pressed while capture is restarting is undone when the restart finishes; Pause throws away the audio still waiting to be transcribed; a failed catch-up card shows "Nothing directed at you" instead of the error | Aziz | `aziz/app-fixes` | Sun 1:55 am | Pushed (PR #44), written on the Windows laptop, never compiled; in the test queue. In `Sources/Clueless/` (Yusuf's folder: `CaptureRestart.swift`, `AppState.swift`, `OverlayView.swift`), as a separate small PR; Aziz asked for these fixes |
+| T48 (new) Camera window for the demo video, and eye direction counts as looking away: a camera button in the panel header opens a compact "Clueless camera" window with one label (Focused / Distracted / No person) and a tracking view behind an eye button; the look-away trigger also uses the eye verdict (off switch in the "…" menu and `CLUELESS_EYES=0`) | Aziz | `aziz/camera-demo` | Sun 9:55 am | After the feature freeze: Aziz decided to make this exception for the demo video. Being written on the Windows laptop, cannot be compiled there. In `Sources/Clueless/` (Yusuf's folder), as one small PR |
 
 ## Up next
 
