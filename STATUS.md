@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 1:25 am ET by Aziz (Mac mini session)
+Last updated: Sun Nov 15, 2:40 am ET by Yusuf
 
 ## People
 
@@ -68,8 +68,8 @@ row (steps 6 and 7) and row 4 use.
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
-| `yusuf/name-wait` | Yusuf | T38 (PR #34). `check.sh yusuf/name-wait app`. No person needed. Launch with `CLUELESS_AUDIO_FILE=<path to demo/call/call.wav>` and `CLUELESS_TEST_MODE=call`, "Your name" set to Yusuf. In `.run/app.log`, for each question to Yusuf: (1) a line `[watcher] needs you; waited N s for the speaker to finish` comes before the `[card catch_up ...]` line; record every N. Expect 0.0 when the question ends with the name, a few seconds when the name comes first, never "gave up" on this recording (it has 8 s of silence after each question). (2) The card's `asked` now holds the question itself, not only "One more question. Yusuf."; compare with `demo/call/expected.json` and with a run on `main`. (3) Time from the name being heard (the `[stt ...]` line with Yusuf) to the card: record it against `main`; the wait is the cost | not run yet |
 | `yusuf/small-fixes` | Yusuf | T39 (PR #35). `check.sh yusuf/small-fixes app`. No person needed. (1) File hook timing: launch with `CLUELESS_AUDIO_FILE=<demo/call/call.wav>`; the time from the first to the last `[stt ...]` line should be about the length of the file (116 s), not 3 to 4% longer. (2) With `CLUELESS_TEST_MODE=call` and `CLUELESS_TEST_NOTES=1` the notes are as on `main` (3 speakers, Maya, Sam, Priya; lines labelled). (3) With nothing playing for a few minutes: no "you" / "Thank you." Them lines; if Whisper produces one the log says `[stt] dropped ...`. (4) `CLUELESS_TEST_LOOKAWAY=20` with the look-away setting off: the log says `no card (the look-away setting is off)`. With a person (T28): Study for a minute, switch to Call, play the call, ask for notes: no study lines in them; the log shows `[notes] call mode entered` | not run yet |
+| `yusuf/review-fixes` | Yusuf | T41 (PR #37), stacked on `yusuf/small-fixes`: it contains T39, so one run of this branch covers both. `check.sh yusuf/review-fixes app`. Without a person: (1) a normal launch logs four `[hotkey] registered Option + key code N` lines (49, 8, 1, 9); any `could NOT register` line names a hotkey another app owns. (2) The demo call through `CLUELESS_AUDIO_FILE` with `CLUELESS_TEST_MODE=call` and `CLUELESS_TEST_NOTES=1` behaves as on `yusuf/small-fixes`: both name cards, notes with Maya, Sam, Priya. (3) `CLUELESS_TEST_QUESTION` with the lecture file: the question and the catch-up 15 s later both give a card (a question now waits for a card in progress instead of being dropped). With a person (T28, see `team/yusuf/SHIP.md`): type a question while a look-away card is being written: it is answered afterwards; Option+S during a streaming card: the voice finishes its sentence and does NOT start again; call mode on the loudspeakers: the call's voices and the spoken card do not show up as "You" lines, and speaking in the 8 s gaps does (if "You" never appears, relaunch with `CLUELESS_MIC_GATE=0` and say so); click play twice quickly: one transcript, not doubled; Cmd+V pastes into the question field, Cmd+Q quits; "…" menu, "Your name: Yusuf…" opens a dialog and saving changes the name; while a name-first question is still being said the panel shows "Listening to the rest of the question…" | not run yet |
 
 ## Milestones
 
@@ -110,7 +110,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| T38 A name-triggered catch-up card waits for the speaker to finish (the next pause) before it is built, so the card has the question and not only "One more question. Yusuf." | Yusuf | `yusuf/name-wait` | Sun 1:20 am | Written on the MacBook, compile-checked only. PR #34 (draft), in the test queue |
+| T41 (new) Fixes from an independent review of the app code: a typed question is no longer dropped while a card is being written; Option+S no longer lets speech start again; in call mode the microphone no longer turns the loudspeakers into "You" lines; capture cannot be started twice; main menu (paste, quit); the name can be edited; screenshots use the main display; hotkey registration is logged | Yusuf | `yusuf/review-fixes` | Sun 2:10 am | Written on the MacBook, compile-checked only. PR #37 (draft), stacked on PR #35, in the test queue |
 | T39 Small things from the code review of T31 and T33: file hook plays in real time; Study -> Call starts a new call for the notes; the look-away hook says why it gave no card. Also drops Whisper's "you" / "Thank you." lines on near-silence (seen in the in-person log). (The camera test window retry is left: testing tool only) | Yusuf | `yusuf/small-fixes` | Sun 1:20 am | Written on the MacBook, compile-checked only. PR #35 (draft), in the test queue |
 
 ## Up next
@@ -162,6 +162,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T38 A name-triggered catch-up card waits for the speaker to finish (0.8 s of quiet, 6 s at most). `check.sh` PASS; on the demo call the name-first question waited 5.2 s and the card has the question ("Can your team still hit Friday for the release candidate?", empty on `main`); a question with the name inside it waited 0.0 s | Yusuf | Sun 2:05 am | PR #34 |
 | T03 Whole app run on the Mac mini with Wi-Fi off: worked (Aziz, in person; Wi-Fi is this Mac's only network connection). No timings taken | Aziz | Sun 1:20 am | BENCHMARKS.md section 1, WORKLOG |
 | T01 Spoken answers in the live app: Aziz heard the cards spoken; in the log all four cards were queued for speech 1.7 to 2.0 s after the trigger and none came back as a transcript line | Aziz | Sun 1:20 am | WORKLOG |
 | T05 / T28 (part) Look-away trigger with a real person: four look-aways of 6 to 9 s during the demo lecture each gave a spoken catch-up card in 2 to 3 s; 31 short glances and 87 look-aways in silence gave none | Aziz | Sun 1:20 am | WORKLOG |
