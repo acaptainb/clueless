@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.setFrameOrigin(NSPoint(x: f.maxX - 440, y: f.maxY - 460))
         }
         panel.orderFrontRegardless()
+        installMainMenu()
         // Test hook: CLUELESS_CAMERA_TEST=1 opens the camera test window at launch (CameraTestView.swift).
         if ProcessInfo.processInfo.environment["CLUELESS_CAMERA_TEST"] == "1" { state.openCameraTest() }
         // Test hook: CLUELESS_CAMERA_TEST_CLOSE=<seconds> closes that window again after a delay, the way the
@@ -70,6 +71,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             HotKey(keyCode: UInt32(kVK_ANSI_S), modifiers: UInt32(optionKey)) { [weak self] in self?.state.stopSpeaking() },
             HotKey(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(optionKey)) { [weak self] in self?.state.toggleVoiceQuestion() },
         ]
+    }
+
+    /// Without a main menu, Cmd+V, Cmd+C, Cmd+X and Cmd+A do nothing in the question field (they are menu
+    /// key equivalents), and Cmd+Q does not quit.
+    private func installMainMenu() {
+        let main = NSMenu()
+        let appItem = NSMenuItem()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Quit Clueless", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appItem.submenu = appMenu
+        main.addItem(appItem)
+        let editItem = NSMenuItem()
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editItem.submenu = edit
+        main.addItem(editItem)
+        NSApp.mainMenu = main
     }
 
     /// Resize the panel to its content, keeping the top edge where it is so it grows downwards.
@@ -119,8 +141,11 @@ final class HotKey {
                 return noErr
             }, 1, &spec, nil, nil)
         }
-        RegisterEventHotKey(keyCode, modifiers, EventHotKeyID(signature: OSType(0x434C5553), id: id),
-                            GetApplicationEventTarget(), 0, &ref)
+        let status = RegisterEventHotKey(keyCode, modifiers, EventHotKeyID(signature: OSType(0x434C5553), id: id),
+                                         GetApplicationEventTarget(), 0, &ref)
+        // A key another app already owns fails here without any other sign: say so in the log.
+        Log.write(status == noErr ? "[hotkey] registered Option + key code \(keyCode)"
+                  : "[hotkey] could NOT register Option + key code \(keyCode) (OSStatus \(status)): another app may own it")
     }
 
     deinit { if let ref { UnregisterEventHotKey(ref) } }

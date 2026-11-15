@@ -125,7 +125,7 @@ struct OverlayView: View {
                     Text("OCR text only (fastest)").tag(ScreenMethod.ocr.rawValue)
                     Text("Screenshot only").tag(ScreenMethod.image.rawValue)
                 }
-                TextField("Your name", text: $state.userName)
+                Button("Your name: \(state.userName)…") { state.editUserName() }
             } label: { Image(systemName: "ellipsis.circle") }
                 .menuStyle(.borderlessButton).frame(width: 28)
         }

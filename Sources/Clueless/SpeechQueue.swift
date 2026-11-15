@@ -39,6 +39,13 @@ final class SpeechQueue {
     private var pending: [String] = []
     private var worker: Task<Void, Never>?
     private var generation = 0
+    /// Set by `stop()` until the next card begins: the card that was stopped is still streaming, and its
+    /// next sentence must not start the voice again.
+    private var muted = false
+    /// True while a piece is being spoken or is waiting to be.
+    var speaking: Bool { worker != nil }
+    /// When the last piece finished or was stopped.
+    private(set) var lastSpokeAt = Date.distantPast
 
     init(speaker: Speaker) { self.speaker = speaker }
 
@@ -46,12 +53,13 @@ final class SpeechQueue {
     func begin() {
         stop()
         splitter = SpeechSplitter()
+        muted = false
     }
 
     /// Give the spoken text so far. Returns true when a new piece was queued.
     @discardableResult
     func update(_ spoken: String, final: Bool) -> Bool {
-        guard let piece = splitter.next(spoken, final: final) else { return false }
+        guard !muted, let piece = splitter.next(spoken, final: final) else { return false }
         pending.append(piece)
         // One line per piece, so order and repeats can be checked from the log without listening.
         Log.write("[speech] queued\(final ? " (last)" : ""): \(piece)")
@@ -60,6 +68,8 @@ final class SpeechQueue {
     }
 
     func stop() {
+        muted = true
+        if worker != nil { lastSpokeAt = Date() }
         generation += 1
         pending.removeAll()
         worker?.cancel()
@@ -74,6 +84,7 @@ final class SpeechQueue {
                 let piece = self.pending.removeFirst()
                 // Plays to the end, or stops when this task is cancelled.
                 _ = try? await self.speaker.sayAndWait(piece)
+                self.lastSpokeAt = Date()
             }
             if let self, self.generation == mine { self.worker = nil }
         }
