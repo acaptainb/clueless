@@ -22,9 +22,13 @@ launch() {
     answerer)
       # 9B answerer, with vision projector. The MTP file + draft-mtp speculation measured ~1.5x faster
       # than plain PQ2_0 with identical answers on our test set (see BENCHMARKS.md).
+      # --cache-ram 0 turns off the server's host-side prompt cache. Its default is 8 GB, and after about
+      # 30 minutes of use the answerer had grown from 2 GB to 10 GB. Off, it stays near 1.6 GB and the first
+      # token comes about 0.1 s later (BENCHMARKS.md). ANSWERER_CACHE_RAM=<MiB> turns it back on.
       nohup "$BIN" -m "$M/Ternary-Bonsai-2-9B-PQ2_0-MTP-Q8_0.gguf" --mmproj "$M/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf" \
         --spec-type draft-mtp --spec-draft-n-max 2 \
         ${ANSWERER_IMAGE_MAX_TOKENS:+--image-max-tokens "$ANSWERER_IMAGE_MAX_TOKENS"} \
+        --cache-ram "${ANSWERER_CACHE_RAM:-0}" \
         -ngl 99 -fa on -c "${ANSWERER_CTX:-8192}" -np 1 --host 127.0.0.1 --port 8080 --offline \
         > "$RUN/answerer.log" 2>&1 & echo $! > "$RUN/answerer.pid" ;;
     watcher)

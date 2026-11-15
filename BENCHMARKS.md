@@ -140,8 +140,26 @@ Correct answers, and seconds to first token, by what is sent. "auto" sends the s
 | classic (old order) | 326 | 208 | 0.47 s | 1.30 s |
 | stable (new default) | 412 | 123 | 0.58 s | 1.31 s |
 
-The new layout is **not** a win here: it reuses fewer tokens and the first token comes 0.1 s later. Scores are the
-same either way. Worth switching the default back to classic, or finding why the stable prefix is shorter.
+Read on its own this says the new layout is not a win. The next table shows why: classic was being helped by the
+server's 8 GB host prompt cache, and stable does not need it.
+
+### Answerer memory and the host prompt cache (`--cache-ram`)
+
+`llama-server` keeps evaluated prompts in host memory, 8 GB by default. Each entry here is 330 to 450 MiB, so the
+answerer grew from 2.0 GB at start to 10 GB after about 35 minutes of tests and stayed there (the log fills with
+"making room for prompt cache entry"). Measured again with the cache off (`--cache-ram 0`):
+
+| Host cache | Layout | Prompt tokens evaluated | Cached | First token | Whole card | Answerer memory after the runs |
+|---|---|---|---|---|---|---|
+| 8 GB (default) | classic | 326 | 208 | 0.47 s | 1.30 s | 10 GB |
+| 8 GB (default) | stable | 412 | 123 | 0.58 s | 1.31 s | 10 GB |
+| off | classic | 467 | 67 | 0.72 s | 1.57 s | 1.6 GB |
+| off | stable | 412 | 123 | 0.59 s | 1.32 s | 1.6 GB |
+
+With the cache off the gate still passes (`PASS main @ 3b0b76e`, questions 10/10, extra set 10/10) and the stable
+layout is unchanged, because it reuses the live context instead of the host cache. So stable + cache off costs
+about 0.1 s to first token against the best case and saves about 8 GB. `scripts/servers.sh` now starts the
+answerer with `--cache-ram 0`; `ANSWERER_CACHE_RAM=8192` restores the old behaviour.
 
 ### Names and call notes (T13, T14, T15)
 
