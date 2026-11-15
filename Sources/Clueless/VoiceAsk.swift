@@ -33,11 +33,12 @@ final class VoiceRecorder {
 
     func start() throws {
         let input = engine.inputNode
-        // Voice processing (echo cancellation) is OFF by default: on the Mac mini it ducked the system
-        // audio and the lecture transcript lost about 6 s while the microphone was on. Without it the
-        // lecture playing through the speakers can leak into the question, so speak close to the mic.
-        // CLUELESS_VOICE_PROCESSING=1 turns it back on with the least ducking macOS allows, to compare.
-        voiceProcessing = ProcessInfo.processInfo.environment["CLUELESS_VOICE_PROCESSING"] == "1"
+        // Voice processing (echo cancellation) with the least ducking macOS allows. Measured on the Mac mini
+        // with a lecture playing through the speakers: with it ON the lecture is filtered out of the
+        // question and the lecture transcript loses a few words while the microphone is open; with it OFF
+        // the transcript is untouched but the lecture itself gets transcribed as the question.
+        // CLUELESS_VOICE_PROCESSING=0 turns it off (fine with headphones).
+        voiceProcessing = ProcessInfo.processInfo.environment["CLUELESS_VOICE_PROCESSING"] != "0"
         if voiceProcessing {
             try? input.setVoiceProcessingEnabled(true)
             input.voiceProcessingOtherAudioDuckingConfiguration =

@@ -441,6 +441,12 @@ final class AppState: ObservableObject {
             let text = (await job.value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             Log.write("[voice \(String(format: "%.2f", Date().timeIntervalSince(t0)))s, \(String(format: "%.1f", Double(samples.count) / 16_000))s of audio] \(text)")
             guard text.count > 2 else { return }
+            // If a card is being written (a look-away catch-up can fire at the same moment), wait for it
+            // instead of losing the question.
+            let waitStart = Date()
+            while thinking, Date().timeIntervalSince(waitStart) < 20 {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
             question = text
             ask()
         }
