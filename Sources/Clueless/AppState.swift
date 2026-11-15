@@ -229,6 +229,23 @@ final class AppState: ObservableObject {
         await capture.stop()
         recording = false
         status = "Paused"
+        // The last few seconds are still waiting in the chunkers for a pause in the speech. `start()` resets
+        // the chunkers, so without this a sentence said just before Pause never reached the transcript.
+        cutBufferedAudio()
+    }
+
+    /// Cut whatever audio is waiting in the chunkers and queue it for transcription. Returns how many
+    /// chunks were cut. Does not wait for the transcription.
+    @discardableResult
+    func cutBufferedAudio() -> Int {
+        var cut = 0
+        for source in [Capture.Source.system, .mic] {
+            guard var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
+            chunkers[source] = chunker
+            enqueue(chunk, source: source)
+            cut += 1
+        }
+        return cut
     }
 
     // While a restart is in progress the button means "stop trying".
@@ -306,13 +323,7 @@ final class AppState: ObservableObject {
     /// Never waits longer than `maxWait`.
     private func flushAudio(maxWait: TimeInterval = 2) async {
         let t0 = Date()
-        var flushed = 0
-        for source in [Capture.Source.system, .mic] {
-            guard var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
-            chunkers[source] = chunker
-            enqueue(chunk, source: source)
-            flushed += 1
-        }
+        let flushed = cutBufferedAudio()
         guard let chain = sttChain else { return }
         // Waiting on a task cannot be cancelled, so poll a flag against the deadline instead.
         final class Flag: @unchecked Sendable { var done = false }

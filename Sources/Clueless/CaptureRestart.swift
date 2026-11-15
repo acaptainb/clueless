@@ -52,6 +52,9 @@ extension AppState {
     private func restartCapture(reason: String) {
         guard !restartingCapture else { return }
         restartingCapture = true
+        // What was said just before the stream was lost is still waiting in the chunkers: transcribe it now.
+        // The chunkers are reset once the new stream is up, and those words were dropped then.
+        cutBufferedAudio()
         // A stream that ran for a while before failing is a new problem, not the same one again.
         if Date().timeIntervalSince(captureStartedAt) > 20 { captureRestarts = 0 }
         let lostAt = Date()
@@ -67,6 +70,14 @@ extension AppState {
                 await capture.stop()                 // drop what is left of the old stream
                 do {
                     try await capture.start(microphone: mode == .call)
+                    // Pause may have been pressed while the stream was starting. `stop()` found no stream
+                    // to stop then, so without this check recording came back on by itself after a pause.
+                    guard wantRecording else {
+                        await capture.stop()
+                        status = "Paused"
+                        Log.write("[capture] paused during a restart: the new stream was stopped again")
+                        break
+                    }
                     resetChunkers()                  // half-filled chunks from before the gap are stale
                     captureDidStart()
                     recording = true
