@@ -76,6 +76,9 @@ final class AppState: ObservableObject {
     private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
     /// When the other side was last heard speaking (system audio above the chunker's pause level). T38.
     private var lastThemSpeechAt = Date.distantPast
+    private let micGate = ProcessInfo.processInfo.environment["CLUELESS_MIC_GATE"] != "0"
+    private var starting = false       // a `start()` is in flight: a second one would open a second stream
+    private var voiceSession = 0       // counts spoken questions, for the stuck-microphone failsafe
     let webcam = Presence()            // not private: the camera test window reads its frames (T31)
     private let voice = VoiceRecorder()
     private var webcamOn = false
@@ -146,7 +149,9 @@ final class AppState: ObservableObject {
     }
 
     func start() async {
-        guard !recording, !restartingCapture, transcriber != nil else { return }
+        guard !recording, !restartingCapture, !starting, transcriber != nil else { return }
+        starting = true
+        defer { starting = false }
         wantRecording = true
         captureRestarts = 0
         resetChunkers()
@@ -206,7 +211,9 @@ final class AppState: ObservableObject {
                 }
             }
         } catch {
-            status = "Screen Recording permission needed (System Settings › Privacy & Security), then relaunch. \(error.localizedDescription)"
+            status = mode == .call
+                ? "Could not start capture. Check Screen Recording and Microphone in System Settings › Privacy & Security, then press play. \(error.localizedDescription)"
+                : "Screen Recording permission needed (System Settings › Privacy & Security), then relaunch. \(error.localizedDescription)"
         }
     }
 
@@ -235,7 +242,12 @@ final class AppState: ObservableObject {
             sessionAudio = SessionAudio()
             Log.write("[notes] call mode entered: call notes start here")
         }
-        Task { if recording { await stop(); await start() } }
+        Task {
+            // A start in flight was made for the old mode (with or without the microphone): let it finish.
+            while starting { try? await Task.sleep(nanoseconds: 100_000_000) }
+            // `wantRecording`: also after a start that failed, so switching back to Study resumes by itself.
+            if recording || (wantRecording && !restartingCapture) { await stop(); await start() }
+        }
     }
 
     // MARK: audio -> timeline
@@ -250,6 +262,7 @@ final class AppState: ObservableObject {
             let speaking = !samples.isEmpty && (energy / Float(samples.count)).squareRoot() >= 0.006
             Task { @MainActor in
                 if speaking { self.lastThemSpeechAt = Date() }
+                if source == .mic, self.micGate, self.micHearsSpeakers { return }
                 // In a call, keep the other side's audio for the speaker labels in the notes (T33).
                 if source == .system, self.mode == .call { self.sessionAudio.append(samples) }
                 guard var chunker = self.chunkers[source] else { return }
@@ -319,10 +332,26 @@ final class AppState: ObservableObject {
             // One automatic catch-up per 20 s at most, and never on top of one in progress.
             if decision.needsUser, !thinking, Date().timeIntervalSince(lastWatchTrigger) > 20 {
                 lastWatchTrigger = Date()
+                let title = decision.reason == "name" ? "You were called on" : "A question for you"
+                if Date().timeIntervalSince(lastThemSpeechAt) < 0.8 {
+                    // The speaker is still talking: say so at once instead of showing nothing for seconds.
+                    var waiting = Card(task: .question)
+                    waiting.answer = "Listening to the rest of the question…"
+                    screenReceipt = nil; cardTitle = title; card = waiting
+                }
                 await waitForThemToFinish()
-                await run(.catchUp, title: decision.reason == "name" ? "You were called on" : "A question for you")
+                await run(.catchUp, title: title)
             }
         }
+    }
+
+    /// In a call on loudspeakers the microphone also hears the other side and Clueless's own voice, and each
+    /// would come back as a "You" line and land in the cards and the notes. So microphone audio is dropped
+    /// while either is playing, and for half a second after (the room's echo). With headphones this is not
+    /// needed: CLUELESS_MIC_GATE=0 turns it off.
+    private var micHearsSpeakers: Bool {
+        Date().timeIntervalSince(lastThemSpeechAt) < 0.5 || speech?.speaking == true
+            || Date().timeIntervalSince(speech?.lastSpokeAt ?? .distantPast) < 0.5
     }
 
     /// The name is often said before the question ("One more question. Yusuf." and only then the question),
@@ -387,7 +416,15 @@ final class AppState: ObservableObject {
         guard !q.isEmpty else { return }
         question = ""
         timeline.append(.system, "User asked: \(q)")   // .system lines are logged but never sent to the model
-        Task { await run(.question, title: q, question: q) }
+        Task {
+            // A card may be in progress (a look-away catch-up starts by itself): wait for it. Before, the
+            // question was cleared from the field and silently dropped.
+            let waitStart = Date()
+            while thinking, Date().timeIntervalSince(waitStart) < 20 {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            await run(.question, title: q, question: q)
+        }
     }
 
     func catchUp() { Task { await run(.catchUp, title: "Catch-up") } }
@@ -481,6 +518,26 @@ final class AppState: ObservableObject {
 
     func stopSpeaking() { speech?.stop(); speaker?.stop() }
 
+    /// "Your name" in the menu: a text field inside a macOS menu cannot be typed into, so ask in a dialog.
+    func editUserName() {
+        let alert = NSAlert()
+        alert.messageText = "Your name"
+        alert.informativeText = "In a call, Clueless catches you up when someone says this name."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+        field.stringValue = userName
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        objectWillChange.send()
+        userName = name
+        Log.write("[settings] user name set to \(name)")
+    }
+
     // MARK: ask by voice (T25)
 
     /// Start listening for a spoken question, or finish one that is being recorded. Study mode only:
@@ -500,6 +557,16 @@ final class AppState: ObservableObject {
                     try self.voice.start()
                     self.listening = true
                     Log.write("[voice] listening")
+                    // Auto-stop is decided inside the microphone callback. If the microphone stops delivering
+                    // (another audio engine starting can do that), finish anyway instead of listening forever.
+                    self.voiceSession += 1
+                    let session = self.voiceSession
+                    Task { [weak self] in
+                        try? await Task.sleep(nanoseconds: 22_000_000_000)
+                        guard let self, self.listening, self.voiceSession == session else { return }
+                        Log.write("[voice] no auto-stop after 22 s: finishing")
+                        self.finishVoiceQuestion()
+                    }
                 } catch {
                     self.voiceProblem("Could not start the microphone: \(error.localizedDescription)")
                 }
