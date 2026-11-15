@@ -67,9 +67,11 @@ final class AppState: ObservableObject {
     private var chunkers: [Capture.Source: AudioChunker] = [:]
     private var sttChain: Task<Void, Never>?
     private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
-    private let webcam = Presence()
+    let webcam = Presence()            // not private: the camera test window reads its frames (T31)
     private let voice = VoiceRecorder()
     private var webcamOn = false
+    /// True while the camera test window is open: keeps the webcam on even when paused (CameraTestView.swift).
+    var cameraTest = false { didSet { syncPresence() } }
     private let pathMonitor = NWPathMonitor()
     private var hudTimer: Timer?
     private var napGuard: NSObjectProtocol?
@@ -272,7 +274,7 @@ final class AppState: ObservableObject {
 
     /// The webcam runs only while recording and while the setting is on.
     private func syncPresence() {
-        let wanted = recording && lookAway
+        let wanted = (recording && lookAway) || cameraTest
         guard wanted != webcamOn else { return }
         webcamOn = wanted
         if wanted { webcam.start() } else { webcam.stop() }
@@ -284,7 +286,8 @@ final class AppState: ObservableObject {
             timeline.append(.webcam, "Looked away", at: at)
         case .returned(let seconds, let since):
             timeline.append(.webcam, "Looked back after \(Int(seconds)) s")
-            guard recording, seconds >= 5, !thinking, Date().timeIntervalSince(lastWatchTrigger) > 20 else {
+            // `lookAway`: the camera test window can keep the webcam on while the setting is off.
+            guard recording, lookAway, seconds >= 5, !thinking, Date().timeIntervalSince(lastWatchTrigger) > 20 else {
                 Log.write("[presence] back after \(Int(seconds)) s, no card")
                 return
             }

@@ -54,6 +54,33 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     var onStatus: ((Status) -> Void)?
     var onEvent: ((PresenceTracker.Event) -> Void)?
 
+    /// What one analysed frame looked like and what was decided from it. Only the camera test window
+    /// (CameraTestView.swift) reads this; the look-away trigger itself uses `onEvent`.
+    struct Frame {
+        var at: Date
+        /// Number of faces Vision found. Only the largest one is used.
+        var faces: Int
+        /// The largest face, in Vision coordinates (0 to 1, origin at the bottom left of the picture).
+        var box: CGRect?
+        /// Radians, signed, as Vision reports them. nil when there is no face or Vision gave no angle.
+        var yaw: Double?
+        var pitch: Double?
+        /// The per-frame decision that goes into the tracker.
+        var attending: Bool
+        /// The tracker's debounced state after this frame.
+        var away: Bool
+        var event: PresenceTracker.Event?
+        var maxAngle: Double
+        /// Pixel size of the analysed picture, to place `box` over a preview.
+        var imageSize: CGSize
+        /// Eye landmarks and gaze estimate; nil unless `setEyeTracking(true)` was called (testing only).
+        var eyes: EyeGaze?
+    }
+    /// Called on the main queue for every analysed frame (about 3 a second) while the camera runs.
+    var onFrame: ((Frame) -> Void)?
+    /// For a live preview layer in the camera test window. Nothing else may touch the session.
+    var previewSession: AVCaptureSession { session }
+
     /// Head turned or tilted further than this (radians, about 30 degrees) is not facing the screen.
     private let maxAngle: Double = 0.52
     /// Seconds between analysed frames.
@@ -67,6 +94,11 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private var configured = false
     private var wanted = false
     private var lastFrame = Date.distantPast
+    private var trackEyes = false
+
+    /// Testing only (camera test window): also estimate where the eyes point, one more Vision request
+    /// per analysed frame. The look-away decision does not use it.
+    func setEyeTracking(_ on: Bool) { queue.async { self.trackEyes = on } }
 
     func start() {
         queue.async { self.wanted = true }
@@ -134,9 +166,18 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
             let yaw = abs(face.yaw?.doubleValue ?? 0), pitch = abs(face.pitch?.doubleValue ?? 0)
             attending = yaw < maxAngle && pitch < maxAngle
         }
-        guard let event = tracker.update(attending: attending, at: now) else { return }
+        let event = tracker.update(attending: attending, at: now)
+        var eyes: EyeGaze?
+        if trackEyes, let face { eyes = EyeGaze.measure(face: face, in: pixels) }
         let status: Status = tracker.away ? .away : .present
+        let frame = Frame(at: now, faces: request.results?.count ?? 0, box: face?.boundingBox,
+                          yaw: face?.yaw?.doubleValue, pitch: face?.pitch?.doubleValue,
+                          attending: attending, away: tracker.away, event: event, maxAngle: maxAngle,
+                          imageSize: CGSize(width: CVPixelBufferGetWidth(pixels), height: CVPixelBufferGetHeight(pixels)),
+                          eyes: eyes)
         DispatchQueue.main.async {
+            self.onFrame?(frame)
+            guard let event else { return }
             self.onStatus?(status)
             self.onEvent?(event)
         }
