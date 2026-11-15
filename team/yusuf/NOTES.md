@@ -5,7 +5,7 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Working on now
 
-Session #1, Sun 2:40 am: T38 is merged (PR #34). T39 (`yusuf/small-fixes`, PR #35) and T41 (`yusuf/review-fixes`, PR #37, stacked on it) are pushed and queued. Everything earlier is merged (T05, T06, T07, T16, T17, T20, T25, T29, T30, T32, T33).
+Session #1, Sun 1:40 am: T38 is merged (PR #34). T39 (`yusuf/small-fixes`, PR #35) and T41 (`yusuf/review-fixes`, PR #37, stacked on it) are pushed and queued. Everything earlier is merged (T05, T06, T07, T16, T17, T20, T25, T29, T30, T32, T33).
 
 ## Pushed, waiting for a Mac mini test
 

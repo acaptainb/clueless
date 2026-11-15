@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 3:00 am ET by Yusuf
+Last updated: Sun Nov 15, 1:40 am ET by Yusuf
 
 ## People
 
@@ -109,7 +109,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| T41 (new) Fixes from an independent review of the app code: a typed question is no longer dropped while a card is being written; Option+S no longer lets speech start again; in call mode the microphone no longer turns the loudspeakers into "You" lines; capture cannot be started twice; main menu (paste, quit); the name can be edited; screenshots use the main display; hotkey registration is logged | Yusuf | `yusuf/review-fixes` | Sun 2:10 am | Written on the MacBook, compile-checked only. PR #37 (draft), in the test queue |
+| T41 (new) Fixes from an independent review of the app code: a typed question is no longer dropped while a card is being written; Option+S no longer lets speech start again; in call mode the microphone no longer turns the loudspeakers into "You" lines; capture cannot be started twice; main menu (paste, quit); the name can be edited; screenshots use the main display; hotkey registration is logged | Yusuf | `yusuf/review-fixes` | Sun 1:30 am | Written on the MacBook, compile-checked only. PR #37 (draft), in the test queue |
 
 ## Up next
 
@@ -160,8 +160,8 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
-| T39 Small fixes: the file test hook plays in real time (was 4.5% slow); entering call mode starts a new call for the notes; Whisper's "you" / "Thank you." lines on near-silence are dropped (checked by reading only: none occurred in the test); the look-away log says why no card was made. `check.sh` PASS. Not done: the camera test window retry | Yusuf | Sun 3:00 am | PR #35 |
-| T38 A name-triggered catch-up card waits for the speaker to finish (0.8 s of quiet, 6 s at most). `check.sh` PASS; on the demo call the name-first question waited 5.2 s and the card has the question ("Can your team still hit Friday for the release candidate?", empty on `main`); a question with the name inside it waited 0.0 s | Yusuf | Sun 2:05 am | PR #34 |
+| T39 Small fixes: the file test hook plays in real time (was 4.5% slow); entering call mode starts a new call for the notes; Whisper's "you" / "Thank you." lines on near-silence are dropped (checked by reading only: none occurred in the test); the look-away log says why no card was made. `check.sh` PASS. Not done: the camera test window retry | Yusuf | Sun 1:35 am | PR #35 |
+| T38 A name-triggered catch-up card waits for the speaker to finish (0.8 s of quiet, 6 s at most). `check.sh` PASS; on the demo call the name-first question waited 5.2 s and the card has the question ("Can your team still hit Friday for the release candidate?", empty on `main`); a question with the name inside it waited 0.0 s | Yusuf | Sun 1:28 am | PR #34 |
 | T03 Whole app run on the Mac mini with Wi-Fi off: worked (Aziz, in person; Wi-Fi is this Mac's only network connection). No timings taken | Aziz | Sun 1:20 am | BENCHMARKS.md section 1, WORKLOG |
 | T01 Spoken answers in the live app: Aziz heard the cards spoken; in the log all four cards were queued for speech 1.7 to 2.0 s after the trigger and none came back as a transcript line | Aziz | Sun 1:20 am | WORKLOG |
 | T05 / T28 (part) Look-away trigger with a real person: four look-aways of 6 to 9 s during the demo lecture each gave a spoken catch-up card in 2 to 3 s; 31 short glances and 87 look-aways in silence gave none | Aziz | Sun 1:20 am | WORKLOG |
