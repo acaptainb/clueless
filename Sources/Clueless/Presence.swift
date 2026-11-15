@@ -73,6 +73,8 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         var maxAngle: Double
         /// Pixel size of the analysed picture, to place `box` over a preview.
         var imageSize: CGSize
+        /// Eye landmarks and gaze estimate; nil unless `setEyeTracking(true)` was called (testing only).
+        var eyes: EyeGaze?
     }
     /// Called on the main queue for every analysed frame (about 3 a second) while the camera runs.
     var onFrame: ((Frame) -> Void)?
@@ -92,6 +94,11 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private var configured = false
     private var wanted = false
     private var lastFrame = Date.distantPast
+    private var trackEyes = false
+
+    /// Testing only (camera test window): also estimate where the eyes point, one more Vision request
+    /// per analysed frame. The look-away decision does not use it.
+    func setEyeTracking(_ on: Bool) { queue.async { self.trackEyes = on } }
 
     func start() {
         queue.async { self.wanted = true }
@@ -160,11 +167,14 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
             attending = yaw < maxAngle && pitch < maxAngle
         }
         let event = tracker.update(attending: attending, at: now)
+        var eyes: EyeGaze?
+        if trackEyes, let face { eyes = EyeGaze.measure(face: face, in: pixels) }
         let status: Status = tracker.away ? .away : .present
         let frame = Frame(at: now, faces: request.results?.count ?? 0, box: face?.boundingBox,
                           yaw: face?.yaw?.doubleValue, pitch: face?.pitch?.doubleValue,
                           attending: attending, away: tracker.away, event: event, maxAngle: maxAngle,
-                          imageSize: CGSize(width: CVPixelBufferGetWidth(pixels), height: CVPixelBufferGetHeight(pixels)))
+                          imageSize: CGSize(width: CVPixelBufferGetWidth(pixels), height: CVPixelBufferGetHeight(pixels)),
+                          eyes: eyes)
         DispatchQueue.main.async {
             self.onFrame?(frame)
             guard let event else { return }

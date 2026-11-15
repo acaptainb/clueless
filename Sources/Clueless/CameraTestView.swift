@@ -6,6 +6,7 @@ import CluelessCore
 // Camera test window (T31). FOR TESTING ONLY: it never opens by itself. Open it from the "…" menu or
 // launch with CLUELESS_CAMERA_TEST=1. It shows what the look-away trigger sees: the live webcam
 // picture, the face Vision picked, the per-frame decision and the debounced tracker state.
+// It also shows an experimental eye-gaze estimate (EyeGaze.swift) that the trigger does not use.
 // It reads the frames of the same `Presence` object the trigger uses, so there is no second detector.
 // Apple Vision face detection only; nothing is saved or sent. The window is not hidden from screen sharing.
 
@@ -88,7 +89,7 @@ struct CameraTestView: View {
         let shown = current(now: now)
         let frame = shown == .waiting || shown == .unavailable ? nil : model.frame
         return HStack(alignment: .top, spacing: 14) {
-            CameraPreview(session: state.webcam.previewSession, box: frame?.box,
+            CameraPreview(session: state.webcam.previewSession, box: frame?.box, eyes: frame?.eyes,
                           imageSize: frame?.imageSize ?? .zero, color: shown.color)
                 .frame(minWidth: 440, minHeight: 330)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -108,6 +109,7 @@ struct CameraTestView: View {
                     Text("\(frame.faces) faces visible. Only the largest (boxed) is used.")
                         .font(.callout.bold()).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
                 }
+                if let frame, frame.faces > 0 { eyeLabel(frame.eyes) }
                 Divider()
                 numbers(frame: frame, now: now)
                 Spacer(minLength: 0)
@@ -135,6 +137,16 @@ struct CameraTestView: View {
             row("Away after / back after", String(format: "%.1f s / %.1f s", defaults.awayAfter, defaults.backAfter))
             row("Last event", model.lastEvent)
             Divider()
+            row("Eyes left / right", signed(frame?.eyes?.horizontal),
+                over: isOver(frame?.eyes?.horizontal, EyeGaze.horizontalLimit))
+            row("Eyes up / down", signed(frame?.eyes?.vertical),
+                over: isOver(frame?.eyes?.vertical, EyeGaze.verticalLimit))
+            row("Eye limits (left-right / up-down)",
+                String(format: "±%.2f / ±%.2f", EyeGaze.horizontalLimit, EyeGaze.verticalLimit))
+            row("Eye openness (closed below)",
+                (frame?.eyes?.openness).map { String(format: "%.2f (%.2f)", $0, EyeGaze.closedBelow) } ?? "–",
+                over: (frame?.eyes?.openness ?? 1) < EyeGaze.closedBelow)
+            Divider()
             row("Frames analysed", "\(model.frames)")
             row("\"Look away\" setting", state.lookAway ? "on" : "off (no cards)")
             row("Capture", state.recording ? "recording" : "paused (no cards)")
@@ -149,6 +161,33 @@ struct CameraTestView: View {
                 .foregroundStyle(over ? Color.orange : Color.primary)
                 .multilineTextAlignment(.trailing)
         }
+    }
+
+    /// Second, smaller label: what the eyes are doing. Experimental and separate from the trigger.
+    private func eyeLabel(_ eyes: EyeGaze?) -> some View {
+        let verdict = eyes?.verdict ?? .unknown
+        let text: String
+        let color: NSColor
+        switch verdict {
+        case .onScreen: text = "Eyes: on the screen"; color = .systemGreen
+        case .sideways:
+            text = (eyes?.horizontal ?? 0) < 0 ? "Eyes: turned to picture left" : "Eyes: turned to picture right"
+            color = .systemOrange
+        case .upOrDown:
+            text = (eyes?.vertical ?? 0) < 0 ? "Eyes: looking down" : "Eyes: looking up"
+            color = .systemOrange
+        case .closed: text = "Eyes: closed"; color = .systemRed
+        case .unknown: text = "Eyes: not found"; color = .systemGray
+        }
+        return Text(text + "  (experimental, not used by the trigger)")
+            .font(.callout.bold())
+            .foregroundStyle(Color(nsColor: color))
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func signed(_ value: Double?) -> String {
+        guard let value else { return "–" }
+        return String(format: "%+.2f", value)
     }
 
     private func degrees(_ radians: Double?) -> String {
@@ -168,19 +207,23 @@ struct CameraTestView: View {
 struct CameraPreview: NSViewRepresentable {
     let session: AVCaptureSession
     var box: CGRect?
+    var eyes: EyeGaze?
     var imageSize: CGSize
     var color: NSColor
 
     func makeNSView(context: Context) -> CameraPreviewView { CameraPreviewView(session: session) }
 
     func updateNSView(_ view: CameraPreviewView, context: Context) {
-        view.show(box: box, imageSize: imageSize, color: color)
+        view.show(box: box, eyes: eyes, imageSize: imageSize, color: color)
     }
 }
 
 final class CameraPreviewView: NSView {
     private let preview: AVCaptureVideoPreviewLayer
     private let boxLayer = CAShapeLayer()
+    private let eyeLayer = CAShapeLayer()     // eye outlines
+    private let pupilLayer = CAShapeLayer()   // pupil dots
+    private var eyes: EyeGaze?
     private var box: CGRect?
     private var imageSize = CGSize.zero
 
@@ -194,6 +237,12 @@ final class CameraPreviewView: NSView {
         boxLayer.lineWidth = 3
         root.addSublayer(preview)
         root.addSublayer(boxLayer)
+        eyeLayer.fillColor = nil
+        eyeLayer.lineWidth = 1.5
+        eyeLayer.strokeColor = NSColor.systemYellow.cgColor
+        pupilLayer.fillColor = NSColor.systemRed.cgColor
+        root.addSublayer(eyeLayer)
+        root.addSublayer(pupilLayer)
         layer = root
         wantsLayer = true
     }
@@ -205,8 +254,9 @@ final class CameraPreviewView: NSView {
         redraw()
     }
 
-    func show(box: CGRect?, imageSize: CGSize, color: NSColor) {
+    func show(box: CGRect?, eyes: EyeGaze?, imageSize: CGSize, color: NSColor) {
         self.box = box
+        self.eyes = eyes
         self.imageSize = imageSize
         boxLayer.strokeColor = color.cgColor
         redraw()
@@ -218,6 +268,10 @@ final class CameraPreviewView: NSView {
         defer { CATransaction.commit() }
         preview.frame = bounds
         boxLayer.frame = bounds
+        eyeLayer.frame = bounds
+        pupilLayer.frame = bounds
+        eyeLayer.path = nil
+        pupilLayer.path = nil
         guard let box, imageSize.width > 0, imageSize.height > 0, bounds.width > 0, bounds.height > 0 else {
             boxLayer.path = nil
             return
@@ -229,6 +283,23 @@ final class CameraPreviewView: NSView {
                           y: picture.minY + box.minY * picture.height,
                           width: box.width * picture.width, height: box.height * picture.height)
         boxLayer.path = CGPath(rect: rect, transform: nil)
+        guard let eyes else { return }
+        func place(_ p: CGPoint) -> CGPoint {
+            CGPoint(x: picture.minX + p.x * picture.width, y: picture.minY + p.y * picture.height)
+        }
+        let outlines = CGMutablePath()
+        for outline in [eyes.leftEye, eyes.rightEye] where outline.count > 1 {
+            outlines.addLines(between: outline.map(place))
+            outlines.closeSubpath()
+        }
+        eyeLayer.path = outlines
+        let dots = CGMutablePath()
+        for pupil in [eyes.leftPupil, eyes.rightPupil] {
+            guard let pupil else { continue }
+            let c = place(pupil)
+            dots.addEllipse(in: CGRect(x: c.x - 3, y: c.y - 3, width: 6, height: 6))
+        }
+        pupilLayer.path = dots
     }
 }
 
@@ -257,6 +328,7 @@ final class CameraTestWindow: NSObject, NSWindowDelegate {
         window.center()
         let sink = model
         state.webcam.onFrame = { [weak sink] frame in sink?.ingest(frame) }
+        state.webcam.setEyeTracking(true)   // only while this window is open
         state.cameraTest = true   // turns the webcam on even when capture is paused
     }
 
@@ -268,6 +340,7 @@ final class CameraTestWindow: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         closed = true
         state?.webcam.onFrame = nil
+        state?.webcam.setEyeTracking(false)
         state?.cameraTest = false   // the webcam goes back to following recording + the look-away setting
         // Let the close finish before the window is released.
         DispatchQueue.main.async { if CameraTestWindow.current === self { CameraTestWindow.current = nil } }
