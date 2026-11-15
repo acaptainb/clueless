@@ -61,7 +61,14 @@ public struct AudioChunker {
     /// RMS below this over a 200 ms window counts as a pause.
     public var silenceRMS: Float = 0.006
     /// On a forced cut, how far back from the end to look for a gap between words. 0 cuts at the very end.
-    public var forcedCutSearchSeconds: Double = 1.5
+    /// 3 s, not 1.5: in unbroken speech the nearest real gap is often further back, and a cut inside a
+    /// phrase lost words ("it covers lectures one through eight" became "it cover" / "through 8").
+    /// Measured on the demo lecture: audio questions 4/5 -> 5/5, word error and lag unchanged (BENCHMARKS.md).
+    /// CLUELESS_CUT_SEARCH overrides it.
+    public var forcedCutSearchSeconds: Double = {
+        if let s = ProcessInfo.processInfo.environment["CLUELESS_CUT_SEARCH"], let v = Double(s), v >= 0, v <= 6 { return v }
+        return 3.0
+    }()
 
     public init(method: ChunkMethod) { self.method = method }
 
