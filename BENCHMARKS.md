@@ -335,6 +335,9 @@ As of Sun Nov 15, 2 am. Each line says where it was seen.
   Word error on the demo lecture is 10.4%.
 - With nothing playing, Whisper occasionally turns noise into "you" or "Thank you." (4 times in 2 quiet hours).
   The app now drops a chunk that is only that (T39); the filter has not been seen firing yet.
+- Screen receipts save whatever is on the main display, secrets included, as JPEG files under `sessions/`
+  (seen Sun 2:19 am: a credentials file open in an editor was readable in a receipt). They stay on the Mac and are
+  ignored by git, but nothing deletes them. Clear `sessions/` before recording or demonstrating.
 - Not yet tried by a person: the hotkeys, a typed question, a spoken question, call mode with a real
   microphone, and capture restarting itself.
 

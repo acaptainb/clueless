@@ -22,6 +22,8 @@ Everything runs on-device with Wi-Fi off:
 - **Ask.** Type a question (⌥Space) or ask it out loud (⌥V). The answer uses the last few minutes of transcript
   and what is on the screen.
 - **Receipts.** Every card lists the transcript lines it used, with speaker and time, and the screenshot it read.
+  The transcript and those screenshots are kept on this Mac under `sessions/` (ignored by git, never sent anywhere).
+  A screenshot shows whatever was on screen, passwords included: delete the folder when you no longer need it.
 - **Spoken answers.** The card streams in and is read aloud from its first complete sentence. ⌥S stops it.
 - **Call mode.** The microphone is "You", system audio is everyone else. At the end, session notes by speaker:
   SpeakerKit separates the voices and the names are worked out from the conversation ("Go ahead, Sam",
