@@ -92,6 +92,20 @@ build takes a few minutes while Core ML compiles the Whisper model.
 - **⌥S** stop speaking (after the sentence being spoken)
 - **⌥V** ask a question out loud (study mode); it stops by itself when you pause
 
+## Try it with the demo material
+
+Everything the demo uses is in `demo/` and was written for this project: a narrated slide lecture, a two-page
+paper and a three-person call. Build the audio once with `python3 scripts/make_demo_assets.py --user Yusuf`.
+
+- **Study mode.** Open `demo/lecture/slides.html` full screen and press Start. Look away for ten seconds and
+  back: a catch-up card. Ask "Which curve diverges?" (needs the chart) or "When are office hours?" (said on
+  slide 1, never shown).
+- **Call mode.** Switch to Call and play `demo/call/call.wav`. Twice someone asks Yusuf a question by name:
+  a card with the question and a suggested reply. At the end, "…" menu, Session notes: decisions and action
+  items by speaker, with the three names worked out from the conversation.
+
+The full run sheet with expected answers is in [demo/README.md](demo/README.md).
+
 ## Testing a branch (Mac mini only)
 
 All building and testing happens on one Mac mini; laptops are for writing code.
