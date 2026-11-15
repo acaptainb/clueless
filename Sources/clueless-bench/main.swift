@@ -269,6 +269,7 @@ do {
     case "names": try await benchNames(port: args.count > 1 ? Int(args[1])! : 8080)
     case "speakers": try await benchSpeakers(args[1], args.count > 2 ? Int(args[2]) : nil, args.count > 3 ? Float(args[3]) : nil)
     case "notes": try await benchNotes(port: args.count > 1 ? Int(args[1])! : 8080, wav: args.count > 2 ? args[2] : nil)
+    case "grounding": try await benchGrounding(port: args.count > 1 ? Int(args[1])! : 8080)
     case "selftest": runSelftest()
     case "tts":
         let speaker = try await Speaker()
@@ -281,7 +282,7 @@ do {
         print("data folder: \(Prompts.dataRoot.path)")
         for line in Prompts.report() { print(line) }
     default:
-        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] [cases] | watch [port] | cache [port] | names [port] | speakers <wav> [count] | notes [port] [wav] | tts | prompts | selftest")
+        print("usage: clueless-bench chunk <wav> <ref.txt> | screen <image> [qa.json] | answer [port] [label] [cases] | watch [port] | cache [port] | names [port] | speakers <wav> [count] | notes [port] [wav] | grounding [port] | tts | prompts | selftest")
     }
 } catch {
     print("error: \(error.localizedDescription)")

@@ -1,0 +1,148 @@
+{
+  "about": "Catch-up cards must be built from what was said, not from what is on the screen. Each case runs 3 times. Keywords are lower case; 'a|b' means either.",
+  "user": "Yusuf",
+  "screens": {
+    "terminal": "Clueless - zsh - 180x48\n● The look-away fix checks out on two launches with no stray card in the first 40 seconds, and the 20-second absence still triggers its card.\n> merge everything\n● Merged PR #20, merged PR #26. Running the gate on main now.\nRan 3 shell commands\n● Both branches pass the gate. Recording the results on the board.\nProblems   Output   Debug Console   Terminal   Ports\nEXPLORER  clueless  .build  bench  demo  models  prompts  scripts  Sources  team\nBENCHMARKS.md  BRIEF.md  CLAUDE.md  README.md  STATUS.md  WORKLOG.md\nauto mode on (shift+tab to cycle) - esc to interrupt",
+    "slide": "Choosing the learning rate\nToo small: it works, but slowly\nToo large: each step overshoots and the loss diverges\nJust right: fast drop, then flat\nη = 1.0 diverges    η = 0.001 too slow    η = 0.01 converges\nML 201 · Lecture 7 · Prof. E. Rivera    4 / 6"
+  },
+  "cases": [
+    {
+      "name": "nothing said, terminal on screen",
+      "lines": [],
+      "screen": "terminal",
+      "asked_empty": true,
+      "sources_empty": true,
+      "missed_any": [
+        "nothing|no one|nobody|not been|no new|quiet|silent"
+      ],
+      "missed_none": [
+        "merge",
+        "pull request",
+        "gate",
+        "pr #",
+        "shell",
+        "branch",
+        "look-away",
+        "terminal"
+      ]
+    },
+    {
+      "name": "lecture, terminal on screen",
+      "lines": [
+        {
+          "source": "them",
+          "text": "At every step we compute the gradient of the loss with respect to the weights."
+        },
+        {
+          "source": "them",
+          "text": "The gradient points in the direction of steepest increase, so we move the weights a small amount in the opposite direction."
+        },
+        {
+          "source": "them",
+          "text": "How far we move is controlled by the learning rate."
+        },
+        {
+          "source": "them",
+          "text": "In practice we do not compute the gradient over the whole data set. Instead we use a small random batch of examples."
+        },
+        {
+          "source": "them",
+          "text": "That is called stochastic gradient descent. In today's example the batch size is 64 and the learning rate is 0.01."
+        }
+      ],
+      "screen": "terminal",
+      "asked_empty": true,
+      "missed_any": [
+        "gradient|learning rate|batch|stochastic"
+      ],
+      "missed_none": [
+        "merge",
+        "pull request",
+        "gate",
+        "pr #",
+        "shell",
+        "branch",
+        "look-away",
+        "terminal"
+      ]
+    },
+    {
+      "name": "question to the user in a call, terminal on screen",
+      "lines": [
+        {
+          "source": "them",
+          "speaker": "Maya",
+          "text": "Let's do the migration Thursday night at ten p.m. Sam owns it."
+        },
+        {
+          "source": "them",
+          "speaker": "Priya",
+          "text": "Budget wise, we have twelve thousand dollars left for the launch ads."
+        },
+        {
+          "source": "them",
+          "speaker": "Maya",
+          "text": "Good. We decided to cut the tablet layout from this release and ship it in January."
+        },
+        {
+          "source": "them",
+          "speaker": "Sam",
+          "text": "Agreed. That saves us about a week of QA."
+        },
+        {
+          "source": "them",
+          "speaker": "Maya",
+          "text": "Yusuf, can your team still hit Friday for the release candidate, given the push notification bug?"
+        }
+      ],
+      "screen": "terminal",
+      "asked_any": [
+        "friday"
+      ],
+      "missed_none": [
+        "merge",
+        "pull request",
+        "gate",
+        "pr #",
+        "shell",
+        "branch",
+        "look-away",
+        "terminal"
+      ]
+    },
+    {
+      "name": "lecture, matching slide on screen",
+      "lines": [
+        {
+          "source": "them",
+          "text": "At every step we compute the gradient of the loss with respect to the weights."
+        },
+        {
+          "source": "them",
+          "text": "The gradient points in the direction of steepest increase, so we move the weights a small amount in the opposite direction."
+        },
+        {
+          "source": "them",
+          "text": "How far we move is controlled by the learning rate."
+        },
+        {
+          "source": "them",
+          "text": "In practice we do not compute the gradient over the whole data set. Instead we use a small random batch of examples."
+        },
+        {
+          "source": "them",
+          "text": "That is called stochastic gradient descent. In today's example the batch size is 64 and the learning rate is 0.01."
+        }
+      ],
+      "screen": "slide",
+      "asked_empty": true,
+      "missed_any": [
+        "gradient|learning rate|batch|stochastic"
+      ],
+      "missed_none": [
+        "rivera",
+        "ml 201"
+      ]
+    }
+  ]
+}
