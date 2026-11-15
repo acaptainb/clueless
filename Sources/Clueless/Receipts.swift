@@ -8,6 +8,8 @@ struct ScreenReceipt {
     let line: TimelineLine
     /// nil until the file has been written (a few tens of milliseconds after the request started).
     var thumbnail: NSImage?
+    /// The picture is shown at the full width of the card instead of as a thumbnail.
+    var enlarged = false
 
     var url: URL? { line.snapshot.map { URL(fileURLWithPath: $0) } }
 }
@@ -86,9 +88,11 @@ extension AppState {
 
 /// The screen receipt in a card: a thumbnail next to the time and the first words read from the screen.
 /// Click the thumbnail to enlarge it in place; the arrow opens the saved file.
+/// No `@State` here: it is a macro whose plugin ships with Xcode, and the Mac mini has none.
 struct ScreenReceiptRow: View {
     let receipt: ScreenReceipt
-    @State private var enlarged = false
+    let toggle: () -> Void
+    private var enlarged: Bool { receipt.enlarged }
 
     private var caption: String {
         let words = receipt.line.text.split(whereSeparator: \.isNewline).joined(separator: " · ")
@@ -99,7 +103,7 @@ struct ScreenReceiptRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 8) {
                 if let image = receipt.thumbnail, !enlarged {
-                    Button { enlarged = true } label: { picture(image).frame(width: 96) }
+                    Button(action: toggle) { picture(image).frame(width: 96) }
                         .buttonStyle(.plain).help("Show the screen Clueless read for this answer")
                 }
                 Text(caption).font(.caption).foregroundStyle(.secondary).lineLimit(enlarged ? 2 : 3)
@@ -110,7 +114,7 @@ struct ScreenReceiptRow: View {
                 }
             }
             if let image = receipt.thumbnail, enlarged {
-                Button { enlarged = false } label: { picture(image) }
+                Button(action: toggle) { picture(image) }
                     .buttonStyle(.plain).help("Click to shrink")
             }
         }

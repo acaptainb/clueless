@@ -5,13 +5,15 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Working on now
 
-T07 speak early, branch `yusuf/speak-early`. Code is pushed and compiles. Waiting for the Mac mini. T05, T16, T17 are merged. Next candidates: T06, T20.
+T30 (`yusuf/look-away-start`) and the T25 fix (`yusuf/voice-ask`): both pushed, compile-checked, waiting for the Mac mini.
+
+Merged so far: T05, T16, T17, T07, T29, T20. T06 (`yusuf/receipts`) was written in the second MacBook session and is in the queue.
 
 ## Pushed, waiting for a Mac mini test
 
-- `yusuf/speak-early` (T07). Watch for: generation slowing down while TTS plays; gaps between sentences.
-- Seen in the Mac mini look-away test: the catch-up ran before the last few seconds of audio were transcribed ("3 lines missed" logged, 5 in the window). Idea: on a trigger, flush the chunkers (`AudioChunker.flush()`) and wait for the transcription chain before building the card. Not on the board yet.
-- In-person live tests for T05, T16, T17 are deferred to the end: see T28 in STATUS.md. T05 will likely need `maxAngle` / `awayAfter` tuning in `Presence.swift`.
+- `yusuf/look-away-start` (T30, PR pending merge on PASS).
+- `yusuf/voice-ask` (T25). Voice processing is off by default now. If the lecture leaks into spoken questions too much, options: `CLUELESS_VOICE_PROCESSING=1` if it no longer costs transcript lines with minimal ducking, or drop the feature (it is optional).
+- In-person tests for everything are deferred to the end: T28 in STATUS.md.
 
 ## Ideas and things to remember
 
