@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 10:40 pm ET by Aziz (Mac mini session)
+Last updated: Sun Nov 15, 1:20 am ET by Yusuf
 
 ## People
 
@@ -109,6 +109,8 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T38 A name-triggered catch-up card waits for the speaker to finish (the next pause) before it is built, so the card has the question and not only "One more question. Yusuf." | Yusuf | `yusuf/name-wait` | Sun 1:20 am | Being written on the MacBook, compile-check only |
+| T39 Small things from the code review of T31 and T33: file hook plays in real time; Study -> Call starts a new call for the notes; the look-away hook says why it gave no card. (The camera test window retry is left: testing tool only) | Yusuf | `yusuf/small-fixes` | Sun 1:20 am | Being written on the MacBook, compile-check only |
 
 ## Up next
 
@@ -133,14 +135,12 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### M3 Call mode
 | ID | Task | Suggested |
 |---|---|---|
-| T38 | A name-triggered catch-up card is built as soon as the name is heard, before the question itself is transcribed (`asked: One more question. Yusuf.`). Wait for the speaker to finish (the next pause) before building the card | Yusuf |
 | T11 | Live test of call mode: microphone = You, system audio = Them (needs Microphone permission) | Yusuf |
 | T12 | Name trigger through the watcher, live: saying the user's name produces a catch-up card | Yusuf |
 
 ### Reliability
 | ID | Task | Suggested |
 |---|---|---|
-| T39 | Small things from the code review of T31 and T33 (WORKLOG, Sat 8:25 pm): the `CLUELESS_AUDIO_FILE` hook plays 3 to 4% slower than real time; Study -> Call -> Study mixes study lines into call notes; the look-away test hook gives no card when the setting is off; the camera test window does not retry after "camera unavailable" | Yusuf |
 | T18 | Soak test, second half: 20 minutes with LIVE capture (ScreenCaptureKit, speakers, webcam, spoken cards). The file-fed half is done (see Done) | both |
 | T28 | In-person live tests deferred until the features are built (Yusuf's decision, Sat 6:45 pm). T05: allow the Camera prompt; eye icon shows; look away 10 s while audio plays then back gives a card; a 1 to 2 s glance does nothing; silence gives no card; pause turns the camera off; tune `maxAngle` / `awayAfter` in `Presence.swift`. T16: orange row and HUD dots while servers start; Restart button; a question during a restart gets a "still starting" card; servers are not restarted mid-answer. T17: display sleep or monitor unplug restarts capture; "Stop sharing" in the menu bar is not undone; pause stays paused; Study/Call switch keeps listening. T07: speech starts before the card finishes; sentences in order, none twice; Option+S stops it at once; a new question cuts off the old speech. T20: ask for session notes and check that a long card scrolls inside the panel. T25: press Option+V and ask a real question out loud while a lecture plays through the speakers; it is transcribed and answered; the lecture is not what gets asked; compare `CLUELESS_VOICE_PROCESSING=0`; a voice question asked while a card is being written is answered afterwards, not lost. T06: click the thumbnail under RECEIPTS to enlarge it inside the card (it scrolls, the HUD stays visible) and again to shrink it; the arrow opens the saved file; a new question replaces the thumbnail; session notes show none | both |
 
