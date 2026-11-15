@@ -328,6 +328,27 @@ public struct Answerer: Sendable {
         }
     }
 
+    /// The part of a request that only grows at its end from one request to the next.
+    static func head(lines: [TimelineLine], userName: String) -> String {
+        var head = ""
+        if !userName.isEmpty { head += "User name: \(userName)\n\n" }
+        head += "TIMELINE (newest last):\n" + (lines.isEmpty ? "(nothing said yet)" : lines.rendered) + "\n\n"
+        return head
+    }
+
+    /// Reads the timeline into the server's cache ahead of time, so that when a card is asked for only the
+    /// question and the newest lines are left to read. Without it a question late in a long session waits
+    /// seconds before its first word (3.4 s with 120 lines on the Mac mini). Call it with the same lines a
+    /// question would get, when new lines have arrived and no card is being written. Only the stable layout
+    /// benefits. Returns the seconds it took, or nil if the server did not answer.
+    @discardableResult
+    public func prewarm(lines: [TimelineLine], userName: String = "") async -> Double? {
+        guard layout == .stable, !lines.isEmpty else { return nil }
+        let reply = try? await client.chat(system: Self.commonSystem, user: .text(Self.head(lines: lines, userName: userName)),
+                                           maxTokens: 1)
+        return reply?.1.seconds
+    }
+
     /// How much screen text a catch-up gets. Questions get up to 4,000 characters.
     static let catchUpScreenChars = 600
 
@@ -343,9 +364,7 @@ public struct Answerer: Sendable {
             card.missed = "Nothing was said in the last few minutes."
             return card
         }
-        var head = ""
-        if !userName.isEmpty { head += "User name: \(userName)\n\n" }
-        head += "TIMELINE (newest last):\n" + (lines.isEmpty ? "(nothing said yet)" : lines.rendered) + "\n\n"
+        let head = Self.head(lines: lines, userName: userName)
         var tail = ""
         if task == .catchUp {
             // A catch-up is about what was said. The screen is only there to help read the words (a slide
