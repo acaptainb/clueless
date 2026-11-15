@@ -20,7 +20,7 @@ struct OverlayView: View {
                 ScrollView {
                     CardView(title: state.cardTitle, card: card, timeline: state.timeline,
                              screen: state.screenReceipt, toggleScreen: { state.screenReceipt?.enlarged.toggle() },
-                             named: state.namedLines)
+                             named: state.namedLines, showReply: state.showReply)
                 }
                     .frame(maxHeight: 380)
                     .fixedSize(horizontal: false, vertical: true)
@@ -47,13 +47,16 @@ struct OverlayView: View {
                 HStack(spacing: 6) {
                     Text("Clueless").font(Style.wordmark)
                     // Visible whenever the webcam is in use for the look-away trigger.
-                    if state.presence != .off {
-                        Image(systemName: state.presence == .present ? "eye" : (state.presence == .away ? "eye.slash" : "video.slash"))
+                    // It follows the camera frame by frame, like the label in the camera window (T50).
+                    if state.presence == .unavailable {
+                        Image(systemName: "video.slash").font(.caption).foregroundStyle(Color.secondary)
+                            .help("Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
+                    } else if state.presence != .off {
+                        Image(systemName: state.focusedNow ? "eye" : "eye.slash")
                             .font(.caption)
-                            .foregroundStyle(state.presence == .away ? Style.warning : Color.secondary)
-                            .help(state.presence == .present ? "Webcam on: you are facing the screen"
-                                  : state.presence == .away ? "Webcam on: you looked away. Clueless will catch you up when you are back"
-                                  : "Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
+                            .foregroundStyle(state.focusedNow ? Style.good : Style.warning)
+                            .help(state.focusedNow ? "Webcam on: you are facing the screen"
+                                  : "Webcam on: you looked away. Clueless will catch you up when you are back")
                     }
                 }
                 Text(state.recording ? "Recording screen + audio · on this Mac only" : state.status)
@@ -111,28 +114,50 @@ struct OverlayView: View {
         .glass()
     }
 
+    // Two rows (T50): the question field with the microphone, then the buttons.
     private var askBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                TextField(state.listening ? "Listening… ask your question out loud" : "Ask about what's on screen or what was said  (⌥Space)",
+                          text: $state.question)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($questionFocused)
+                    .onSubmit(state.ask)
+                // Ask by voice: the microphone goes through Argmax WhisperKit, on this Mac.
+                Button(action: state.toggleVoiceQuestion) { Image(systemName: state.listening ? "mic.fill" : "mic") }
+                    .buttonStyle(GlassIconButtonStyle(symbol: state.listening ? Style.recording : nil))
+                    .disabled(state.mode == .call)
+                    .opacity(state.mode == .call ? 0.4 : 1)
+                    .help(state.mode == .call ? "Asking by voice is off in call mode: the call would hear you"
+                          : state.listening ? "Listening. Stops by itself when you pause, or click to finish"
+                          : "Ask by voice  (⌥V)")
+            }
+            buttonRow
+        }
+    }
+
+    private var buttonRow: some View {
         HStack(spacing: 6) {
-            TextField(state.listening ? "Listening… ask your question out loud" : "Ask about what's on screen or what was said  (⌥Space)",
-                      text: $state.question)
-                .textFieldStyle(.roundedBorder)
-                .focused($questionFocused)
-                .onSubmit(state.ask)
-            // Ask by voice: the microphone goes through Argmax WhisperKit, on this Mac.
-            Button(action: state.toggleVoiceQuestion) { Image(systemName: state.listening ? "mic.fill" : "mic") }
-                .buttonStyle(GlassIconButtonStyle(symbol: state.listening ? Style.recording : nil))
-                .disabled(state.mode == .call)
-                .opacity(state.mode == .call ? 0.4 : 1)
-                .help(state.mode == .call ? "Asking by voice is off in call mode: the call would hear you"
-                      : state.listening ? "Listening. Stops by itself when you pause, or click to finish"
-                      : "Ask by voice  (⌥V)")
             Button("Catch me up", action: state.catchUp)
                 .keyboardShortcut("k", modifiers: [.command])
                 .buttonStyle(.borderedProminent).tint(Style.accent)
                 .help("What did I miss?  (⌥C)")
+            // Speak answers: was a menu entry, now a button (T50).
+            Button(action: state.toggleSpeak) {
+                Label(state.speak ? "Speaking" : "Silent", systemImage: state.speak ? "speaker.wave.2.fill" : "speaker.slash.fill")
+            }
+            .buttonStyle(.bordered).tint(state.speak ? Style.accent : Style.off)
+            .help(state.speak ? "Answers are spoken. Click to keep them silent" : "Answers are silent. Click to have them spoken")
+            // Shows or hides the blue "You could say" box of a catch-up card (T50).
+            Button(action: state.toggleShowReply) {
+                Label("Reply", systemImage: state.showReply ? "text.bubble.fill" : "text.bubble")
+            }
+            .buttonStyle(.bordered).tint(state.showReply ? Style.accent : Style.off)
+            .help(state.showReply ? "\"You could say\" is shown on catch-up cards. Click to hide it"
+                  : "\"You could say\" is hidden. Click to show it")
+            Spacer(minLength: 0)
             Menu {
                 Button("Session notes", action: state.notes)
-                Toggle("Speak answers", isOn: $state.speak)
                 Toggle("Catch me up when I look away (webcam)", isOn: $state.lookAway)
                 Toggle("Count eye direction as looking away", isOn: $state.countEyes)
                     .disabled(AppState.eyesForcedOff)
@@ -172,6 +197,8 @@ struct CardView: View {
     var toggleScreen: () -> Void = {}
     /// Lines with speaker names from the call notes (T33); used for receipts when a line has one.
     var named: [Int: TimelineLine] = [:]
+    /// False hides the "You could say" box (the button under the question field, T50).
+    var showReply = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -179,7 +206,7 @@ struct CardView: View {
             if !showsMessage {
                 row("You were asked", card.asked.isEmpty ? "Nothing directed at you." : card.asked)
                 row("You missed", card.missed)
-                if !card.reply.isEmpty { row("You could say", card.reply, highlight: true) }
+                if showReply, !card.reply.isEmpty { row("You could say", card.reply, highlight: true) }
             } else {
                 Text(card.answer).font(.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }

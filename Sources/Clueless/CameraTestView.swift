@@ -418,6 +418,18 @@ extension AppState {
         CameraTestWindow.current?.show()
     }
 
+    /// Buttons under the question field (T50).
+    func toggleSpeak() {
+        objectWillChange.send()   // make sure the button redraws: the value lives in @AppStorage
+        speak.toggle()
+        if !speak { stopSpeaking() }
+    }
+
+    func toggleShowReply() {
+        objectWillChange.send()
+        showReply.toggle()
+    }
+
     /// The camera button in the panel header: opens the window, or closes it if it is open.
     func toggleCameraWindow() {
         if let open = CameraTestWindow.current, !open.closed { open.closeLikeTheButton() } else { openCameraTest() }

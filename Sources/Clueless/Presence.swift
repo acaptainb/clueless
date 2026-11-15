@@ -12,8 +12,9 @@ struct PresenceTracker {
         case returned(awaySeconds: TimeInterval, since: Date)
     }
 
-    /// Not facing the screen for this long counts as away.
-    var awayAfter: TimeInterval = 3
+    /// Not facing the screen for this long counts as away. Was 3 s: in the in-person test the app
+    /// decided "away" too quickly to feel real (T50).
+    var awayAfter: TimeInterval = 4.5
     /// Facing the screen again for this long counts as back.
     var backAfter: TimeInterval = 0.6
 
@@ -53,6 +54,9 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     /// Both are called on the main queue.
     var onStatus: ((Status) -> Void)?
     var onEvent: ((PresenceTracker.Event) -> Void)?
+    /// Called on the main queue for every analysed frame with the per-frame decision, before the
+    /// debounce. The eye icon in the panel header follows it, so it agrees with the camera window (T50).
+    var onLive: ((Bool) -> Void)?
 
     /// What one analysed frame looked like and what was decided from it. Only the camera test window
     /// (CameraTestView.swift) reads this; the look-away trigger itself uses `onEvent`.
@@ -201,6 +205,7 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
                           eyes: eyes)
         DispatchQueue.main.async {
             self.onFrame?(frame)
+            self.onLive?(attending)
             guard let event else { return }
             self.onStatus?(status)
             self.onEvent?(event)
