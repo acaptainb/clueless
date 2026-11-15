@@ -46,14 +46,26 @@ extension AppState {
         Log.write("[test41] 1: \(answered ? "PASS" : "FAIL"): a card was being written when the question was asked: \(overlapped) (must be true for this to mean anything); the question got its card: \(answered), \(String(format: "%.1f", Date().timeIntervalSince(t0))) s after it was asked")
 
         // 2. Option+S while a card is still streaming: the voice must not start again for that card.
+        //    Pressed the moment the card's text holds its first complete sentence (that is when the voice
+        //    starts), so the rest of the card is still to come. A fixed delay missed short cards.
         await t41Pause(6)                      // let the question's answer finish being spoken
         _ = await t41Idle()
-        Log.write("[test41] 2: session notes now (a long card), Option+S 2.5 s later")
-        notes()
-        await t41Pause(2.5)
-        let streaming = thinking
-        stopSpeaking()
-        Log.write("[test41] 2: STOP SPEAKING pressed; the card was still being written: \(streaming) (must be true). Any \"[speech] queued\" line between here and the line \"[test41] 2: end\" is a FAIL")
+        Log.write("[test41] 2: catch-up now; Option+S as soon as its first sentence is complete")
+        catchUp()
+        let t2 = Date()
+        var pressed = false
+        while Date().timeIntervalSince(t2) < 30 {
+            if thinking, let spoken = card?.spoken, spoken.count >= 30,
+               spoken.range(of: "[.!?]\\s", options: .regularExpression) != nil {
+                stopSpeaking()
+                pressed = true
+                Log.write("[test41] 2: STOP SPEAKING pressed \(String(format: "%.2f", Date().timeIntervalSince(t2))) s after the trigger, with the card still being written. Any \"[speech] queued\" line between here and the line \"[test41] 2: end\" is a FAIL")
+                break
+            }
+            if !thinking, Date().timeIntervalSince(t2) > 1 { break }   // the card finished first
+            await t41Pause(0.02)
+        }
+        if !pressed { Log.write("[test41] 2: TIMING MISSED: the card was finished before a complete sentence was seen; nothing tested") }
         _ = await t41Idle()
         await t41Pause(1)
         Log.write("[test41] 2: end")
