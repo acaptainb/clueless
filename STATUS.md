@@ -128,7 +128,6 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### Performance (the main focus)
 | ID | Task | Suggested |
 |---|---|---|
-| T37 | A forced 8 s cut can still lose words: "it covers lectures one through eight" came out as "it cover" / "through 8" on the demo lecture (the one miss in `clueless-bench lecture`). Try overlapping the two chunks, or a longer limit when nobody pauses | Aziz |
 
 ### M3 Call mode
 | ID | Task | Suggested |
@@ -163,6 +162,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T37 Forced cuts look 3 s back for a gap between words (was 1.5 s): lecture audio questions 4/5 -> 5/5, word error and lag unchanged | Aziz | Sat 9:37 pm | PR #32 |
 | T18 (first half) 22-minute soak with a lecture fed through the file hook: 340 lines, no crash, app 300 to 366 MB, answerer 1.2 GB, watcher 0.25 to 0.29 GB, transcription 0.40 s per chunk at the start and at the end. The question at the end was right but slow to start (3.4 s to first token with 120 lines) | Aziz | Sat 9:18 pm | BENCHMARKS.md, WORKLOG |
 | T36 `clueless-bench lecture`: the lecture's audio-only questions in one run, 4/5 on the demo lecture (the miss is a lost word at a forced cut, T37). TTSKit loads with `download: false` | Aziz | Sat 8:55 pm | PR #30 |
 | T34 Catch-up cards come from what was said: screen text labelled as background and cut to 600 characters, no model call when nothing was said. `clueless-bench grounding` 12/12 | Aziz | Sat 8:50 pm | PR #29 |
