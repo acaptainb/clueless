@@ -22,6 +22,9 @@ final class AppState: ObservableObject {
     @Published var listening = false          // recording a spoken question (T25)
     @Published var hud = HUD()
     @Published var presence = Presence.Status.off
+    /// What the webcam sees right now, frame by frame (no debounce): true = focused. For the eye icon in
+    /// the header only; cards still come from the debounced `presence` events (T50).
+    @Published var focusedNow = true
     /// Shown as a warning row in the panel while a Bonsai server is down, loading or being started.
     @Published var serverIssue: String?
     @Published var serverCanRestart = false
@@ -32,6 +35,8 @@ final class AppState: ObservableObject {
     var autoStartAttempts = 0
     @AppStorage("userName") var userName = "Yusuf"
     @AppStorage("speak") var speak = true
+    /// T50: the "You could say" box of a catch-up card can be hidden with a button.
+    @AppStorage("showReply") var showReply = true
     @AppStorage("lookAway") var lookAway = true { didSet { syncPresence() } }
     /// T48: eyes turned away with the head still also count as looking away. CLUELESS_EYES=0 forces it off.
     @AppStorage("countEyes") var countEyes = true { didSet { webcam.setEyesCount(eyesCount) } }
@@ -113,6 +118,10 @@ final class AppState: ObservableObject {
         napGuard = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical],
                                                          reason: "Live transcription")
         webcam.onStatus = { [weak self] status in self?.presence = status }
+        // Published only when it changes: frames arrive about three times a second.
+        webcam.onLive = { [weak self] focused in
+            if let self, self.focusedNow != focused { self.focusedNow = focused }
+        }
         webcam.onEvent = { [weak self] event in self?.presenceChanged(event) }
         webcam.setEyesCount(eyesCount)
         // Test hook: CLUELESS_TEST_LOOKAWAY=<seconds> pretends the user looked away for that long, then
