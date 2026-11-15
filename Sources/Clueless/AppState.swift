@@ -364,7 +364,10 @@ final class AppState: ObservableObject {
         // reuses its cache between requests. A window given by the caller (look-away) is kept exact.
         let step: TimeInterval = window == nil ? 60 : 0
         let window: TimeInterval = window ?? (task == .notes ? 3600 : (task == .catchUp ? 150 : 300))
-        let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45, step: step)
+        // A question may be about anything in the window, so it gets more lines than a catch-up. With 45,
+        // a question at the end of a 162 s lecture could not see its first lines (seen on the Mac mini).
+        let maxLines = task == .notes ? 200 : (task == .question ? 120 : 45)
+        let lines = timeline.recent(seconds: window, maxLines: maxLines, step: step)
             .filter { $0.source == .them || $0.source == .me }
         do {
             let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
