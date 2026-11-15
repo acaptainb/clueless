@@ -76,6 +76,7 @@ final class AppState: ObservableObject {
     private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
     /// When the other side was last heard speaking (system audio above the chunker's pause level). T38.
     private var lastThemSpeechAt = Date.distantPast
+    private var lastFlushAt = Date.distantPast
     private let micGate = ProcessInfo.processInfo.environment["CLUELESS_MIC_GATE"] != "0"
     private var starting = false       // a `start()` is in flight: a second one would open a second stream
     private var voiceSession = 0       // counts spoken questions, for the stuck-microphone failsafe
@@ -306,15 +307,14 @@ final class AppState: ObservableObject {
     /// Never waits longer than `maxWait`.
     private func flushAudio(maxWait: TimeInterval = 2) async {
         let t0 = Date()
-        // Cutting in the middle of a word loses it ("Go ahead, Sam." became "Ahead, Sam." on the Mac mini).
-        // If the other side is speaking right now, give them up to half a second to reach a gap between words.
-        while Date().timeIntervalSince(lastThemSpeechAt) < 0.12, Date().timeIntervalSince(t0) < 0.5 {
-            try? await Task.sleep(nanoseconds: 20_000_000)
-        }
-        let gapWait = Date().timeIntervalSince(t0)
+        // The look-away trigger flushes to count what was missed and then `run` flushes again for the card.
+        // Two cuts a moment apart leave a piece too short for Whisper between them, and its words were lost
+        // (seen on the Mac mini). A flush that follows another within 2 s only waits for the queue.
+        let cut = Date().timeIntervalSince(lastFlushAt) > 2
+        lastFlushAt = Date()
         var flushed = 0
         for source in [Capture.Source.system, .mic] {
-            guard var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
+            guard cut, var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
             chunkers[source] = chunker
             enqueue(chunk, source: source)
             flushed += 1
@@ -327,7 +327,7 @@ final class AppState: ObservableObject {
         while !flag.done, Date().timeIntervalSince(t0) < maxWait {
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
-        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)"), waited for a gap \(String(format: "%.2f", gapWait))s")
+        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)")\(cut ? "" : " (no cut: flushed under 2 s ago)")")
     }
 
     private func runWatcher() {
