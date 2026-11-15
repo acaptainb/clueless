@@ -52,7 +52,9 @@ final class AppState: ObservableObject {
     @Published var screenReceipt: ScreenReceipt?
     let capture = Capture()
     // Call notes (CallNotes.swift, T33): the other side's audio is kept so the speakers can be labelled.
-    let sessionAudio = SessionAudio()
+    var sessionAudio = SessionAudio()
+    /// When call mode was last entered. Call notes cover the call from here on, not the study session before it.
+    var callStartedAt = Date.distantPast
     var speakerLabeler: SpeakerLabeler?
     /// Lines with the speaker names found by the last call notes, by line number. Receipts show these.
     @Published var namedLines: [Int: TimelineLine] = [:]
@@ -88,7 +90,7 @@ final class AppState: ObservableObject {
         timeline = Timeline(jsonl: Paths.sessions.appendingPathComponent("\(stamp).jsonl"))
         snapshotDir = Paths.sessions.appendingPathComponent("\(stamp)-screens")
         // Test hook: CLUELESS_TEST_MODE=call starts in call mode, so call mode can be checked with nobody at the Mac.
-        if ProcessInfo.processInfo.environment["CLUELESS_TEST_MODE"] == "call" { mode = .call }
+        if ProcessInfo.processInfo.environment["CLUELESS_TEST_MODE"] == "call" { mode = .call; callStartedAt = Date() }
         pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in self?.hud.online = path.status == .satisfied }
         }
@@ -157,10 +159,14 @@ final class AppState: ObservableObject {
             Task.detached { [weak self] in
                 guard let samples = try? AudioFile.load16k(path) else { return }
                 var i = 0
+                let began = Date()
                 while i < samples.count {
                     self?.ingest(.system, Array(samples[i..<min(i + 1600, samples.count)]))
                     i += 1600
-                    try? await Task.sleep(nanoseconds: 100_000_000)
+                    // Sleep until this point of the file is due, so the file plays in real time. A fixed
+                    // 100 ms sleep per buffer ran 3 to 4% slow and put speaker labels slightly off.
+                    let wait = began.addingTimeInterval(Double(i) / 16_000).timeIntervalSinceNow
+                    if wait > 0 { try? await Task.sleep(nanoseconds: UInt64(wait * 1e9)) }
                 }
                 // trailing silence so the last chunk is cut
                 for _ in 0..<30 { self?.ingest(.system, [Float](repeating: 0, count: 1600)); try? await Task.sleep(nanoseconds: 100_000_000) }
@@ -219,7 +225,16 @@ final class AppState: ObservableObject {
     // While a restart is in progress the button means "stop trying".
     func toggle() { Task { (recording || restartingCapture) ? await stop() : await start() } }
 
-    func modeChanged() { Task { if recording { await stop(); await start() } } }
+    func modeChanged() {
+        // Entering call mode starts a new call: its notes must not include the study session before it,
+        // or the recording of an earlier call.
+        if mode == .call {
+            callStartedAt = Date()
+            sessionAudio = SessionAudio()
+            Log.write("[notes] call mode entered: call notes start here")
+        }
+        Task { if recording { await stop(); await start() } }
+    }
 
     // MARK: audio -> timeline
 
@@ -247,11 +262,23 @@ final class AppState: ObservableObject {
             let t0 = Date()
             guard let text = try? await transcriber.transcribe(chunk.samples), text.count > 1 else { return }
             self.hud.stt = Date().timeIntervalSince(t0)
+            if Self.isSilenceFiller(text) {
+                Log.write("[stt] dropped \"\(text)\": Whisper writes this on near-silent audio")
+                return
+            }
             let line = self.timeline.append(source == .mic ? .me : .them, text, at: chunk.startedAt)
             Log.write("[stt \(String(format: "%.2f", self.hud.stt))s] \(line.rendered)")
             self.tail = self.timeline.last(40).filter { $0.source == .them || $0.source == .me }.suffix(5).map { $0 }
             if self.mode == .call, line.source == .them { self.runWatcher() }
         }
+    }
+
+    /// With nothing playing, Whisper turns faint noise into "you", "Thank you." or "Thank" (four such lines in
+    /// two quiet hours on the Mac mini). A whole chunk that is only one of these is dropped, so it does not
+    /// land in the transcript or the notes.
+    static func isSilenceFiller(_ text: String) -> Bool {
+        let plain = text.lowercased().filter { $0.isLetter || $0 == " " }.trimmingCharacters(in: .whitespaces)
+        return ["you", "thank", "thank you", "thanks for watching", "thank you for watching"].contains(plain)
     }
 
     /// Bring the timeline up to the present: transcribe whatever audio is still sitting in the chunkers
@@ -308,7 +335,9 @@ final class AppState: ObservableObject {
             timeline.append(.webcam, "Looked back after \(Int(seconds)) s")
             // `lookAway`: the camera test window can keep the webcam on while the setting is off.
             guard recording, lookAway, seconds >= 5, !thinking, Date().timeIntervalSince(lastWatchTrigger) > 20 else {
-                Log.write("[presence] back after \(Int(seconds)) s, no card")
+                let why = !recording ? "not recording" : !lookAway ? "the look-away setting is off"
+                    : seconds < 5 ? "under 5 s" : thinking ? "a card is being written" : "another automatic card under 20 s ago"
+                Log.write("[presence] back after \(Int(seconds)) s, no card (\(why))")
                 return
             }
             Task {
@@ -405,7 +434,7 @@ final class AppState: ObservableObject {
             }
             // In a call the notes are by speaker, with names: speakers are labelled and named first (T33).
             let result = task == .notes && mode == .call
-                ? try await callNotes(lines, answerer: answerer, onPartial: onPartial)
+                ? try await callNotes(lines.filter { $0.t >= callStartedAt }, answerer: answerer, onPartial: onPartial)
                 : try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
                                             question: question, userName: userName, onPartial: onPartial)
             card = result
