@@ -261,6 +261,27 @@ The screen text in a catch-up is now labelled as background and cut to 600 chara
 "lectures through 8": a forced 8 s cut fell inside "it covers lectures one through eight" and Whisper lost
 "s lectures one" across the two chunks. The word-safe cut (T19) does not prevent it.
 
+### Words lost at a forced cut (T37)
+
+When nobody pauses for 8 s the chunk is cut at the quietest 50 ms near its end. Looking back 3 s for that gap
+instead of 1.5 s:
+
+| Search window | Lecture audio questions | Word error, demo lecture | Word error, short lecture | Avg lag |
+|---|---|---|---|---|
+| 1.5 s (before) | 4/5 | 10.4% | 4.4% | 2.2 s |
+| **3 s (now)** | 5/5 | 10.4% | 4.4% | 2.2 s |
+| 4.5 s | 5/5 | 10.4% | 4.4% | 2.2 s |
+
+Padding each chunk with 0.3 or 0.6 s of silence was also tried and did not help (word error 10.6 to 10.8%,
+questions 3/5 and 4/5).
+
+### Soak, file-fed (T18, first half)
+
+21.6 minutes of lecture through `CLUELESS_AUDIO_FILE`: no crash, 340 lines. App 300 MB at the start and 325 to
+366 MB at the end; answerer 1.2 GB throughout; watcher 0.25 to 0.29 GB; transcription 0.40 s per chunk at the
+start and at the end. The question at the end was right, but took 3.4 s to its first token: 120 lines are about
+2,600 prompt tokens and none were cached.
+
 ### Other
 
 - TTSKit loads with `download: false` from `models/argmax` (25 s first load in a new binary) and speaks.
