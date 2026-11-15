@@ -12,7 +12,10 @@ public enum ScreenPolicy {
     /// Longest side of the screenshot sent to the model. `CLUELESS_IMAGE_SIDE=768` overrides it without a rebuild.
     public static let imageMaxSide: Int = {
         if let s = ProcessInfo.processInfo.environment["CLUELESS_IMAGE_SIDE"], let n = Int(s), n >= 256 { return n }
-        return 1024
+        // 768 is the smallest size that kept every test question right, including the chart-colour questions
+        // on the lecture slide (512 lost the colour). First token is about 0.6 s sooner than at 1024.
+        // Measured on the Mac mini, BENCHMARKS.md section 7.
+        return 768
     }()
 
     /// Below this many OCR characters the screen is mostly a picture (a video frame, a diagram, a photo).
