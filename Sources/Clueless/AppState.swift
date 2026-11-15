@@ -279,7 +279,9 @@ final class AppState: ObservableObject {
                 let missed = timeline.recent(seconds: Date().timeIntervalSince(since), maxLines: 200)
                     .filter { $0.source == .them }
                 Log.write("[presence] back after \(Int(seconds)) s, \(missed.count) lines missed")
-                guard !missed.isEmpty, !thinking else { return }
+                // One short line is not worth a card, and with almost nothing to go on the model makes one up.
+                let enough = missed.count >= 2 || missed.reduce(0) { $0 + $1.text.count } >= 60
+                guard enough, !thinking else { return }
                 lastWatchTrigger = Date()
                 // Only the absence plus a short lead-in for context. A wider window made the card summarise
                 // everything said so far instead of what was missed (seen in the Mac mini test).
