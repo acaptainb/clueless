@@ -3,6 +3,8 @@ import CluelessCore
 
 struct OverlayView: View {
     @ObservedObject var state: AppState
+    /// Reports the height the content needs, so the panel can be sized to fit it (App.swift).
+    var onHeight: (CGFloat) -> Void = { _ in }
     @FocusState private var questionFocused: Bool
 
     var body: some View {
@@ -12,13 +14,22 @@ struct OverlayView: View {
             transcript
             askBar
             if state.thinking { thinkingRow }
-            if let card = state.card { CardView(title: state.cardTitle, card: card, timeline: state.timeline) }
-            Spacer(minLength: 0)
+            if let card = state.card {
+                // As tall as the card needs, up to a limit; a longer card (session notes) scrolls
+                // instead of pushing the HUD off the panel.
+                ScrollView { CardView(title: state.cardTitle, card: card, timeline: state.timeline) }
+                    .frame(maxHeight: 380)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             hud
         }
         .padding(14)
         .frame(width: 420)
-        .frame(minHeight: 300)
+        // Take the natural height and tell the panel, which resizes to fit. Before this the content
+        // could be taller than the window and overflowed at both ends, hiding the HUD.
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight($0) }
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(.regularMaterial)
         .onChange(of: state.focusQuestion) { questionFocused = true }
     }
