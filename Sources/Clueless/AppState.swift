@@ -46,6 +46,10 @@ final class AppState: ObservableObject {
     }
 
     let timeline: Timeline
+    /// Where this session's screen receipts are saved (next to the session's JSONL file).
+    let snapshotDir: URL
+    /// The screen the current card was answered from; shown under the card's receipts (Receipts.swift).
+    @Published var screenReceipt: ScreenReceipt?
     let capture = Capture()
     // Capture supervision state (used by the extension in CaptureRestart.swift).
     var wantRecording = false          // the user wants capture on; false after pause
@@ -75,6 +79,7 @@ final class AppState: ObservableObject {
     init() {
         let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
         timeline = Timeline(jsonl: Paths.sessions.appendingPathComponent("\(stamp).jsonl"))
+        snapshotDir = Paths.sessions.appendingPathComponent("\(stamp)-screens")
         pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in self?.hud.online = path.status == .satisfied }
         }
@@ -319,6 +324,7 @@ final class AppState: ObservableObject {
     private func run(_ task: AnswerTask, title: String, question: String? = nil,
                      window: TimeInterval? = nil) async {
         guard !thinking else { return }
+        screenReceipt = nil   // it belonged to the previous card
         if startingServers {
             var waiting = Card(task: task)
             waiting.answer = "The Bonsai servers are still starting. Try again in a few seconds."
@@ -349,7 +355,8 @@ final class AppState: ObservableObject {
             screenText = input.text
             image = input.image
             hud.ocr = input.ocrSeconds
-            if !screenText.isEmpty { timeline.append(.screen, String(screenText.prefix(300))) }
+            // Receipt: save the screenshot and record it on the timeline with `snapshot` set (T06).
+            keepReceipt(of: shot, text: screenText)
         }
 
         await audioFlushed
