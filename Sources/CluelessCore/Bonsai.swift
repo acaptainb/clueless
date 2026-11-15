@@ -307,12 +307,14 @@ public struct Answerer: Sendable {
         case .question:
             return """
             The user asks a question about the lecture or document. Answer in 1 to 3 short sentences, plain text, no markdown.
+            In the timeline, "Them" only marks a line said by someone other than the user. Never write "Them" in the answer: write "the speaker", or the person's name when the line has one.
             JSON shape: {"answer": "...", "sources": [12, 9]}
             """
         case .catchUp:
             return """
             The user lost the thread and needs to be caught up right now.
             "asked" and "missed" are about what people SAID, so take them only from the TIMELINE. Anything under ON SCREEN is background that nobody said: never report it as said, asked or missed, and never describe the screen.
+            In the timeline, "Them" only marks a line said by someone other than the user. Never write "Them" in the card: write "the speaker", or the person's name when the line has one.
             - "asked": the question or request most recently directed at the user in the timeline, in one sentence. "" if nobody asked them anything.
             - "missed": the 1 to 2 most important things said in the timeline recently, in one or two sentences.
             - "reply": one natural sentence the user could say out loud next. "" if no reply is needed.
