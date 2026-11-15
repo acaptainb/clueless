@@ -282,6 +282,26 @@ questions 3/5 and 4/5).
 start and at the end. The question at the end was right, but took 3.4 s to its first token: 120 lines are about
 2,600 prompt tokens and none were cached.
 
+### First word late in a long session, and why a background prewarm is not in the app (`clueless-bench prewarm`)
+
+A question after 20 minutes waits 3.4 s for its first word: 120 lines are about 2,600 prompt tokens, none cached.
+`Answerer.prewarm` reads the timeline into the server's cache ahead of time. In the bench it works:
+
+| 120-line timeline, same question | Whole card | Prompt tokens read | Cached |
+|---|---|---|---|
+| Cold (something else was asked before) | 7.9 to 8.8 s | 4,864 | 0 |
+| After a prewarm (7.1 s, in the background) | 1.6 s | 577 | 4,287 |
+| Three new lines, top-up (0.9 s), then the question | 1.6 to 2.1 s | 577 | 4,361 |
+
+Wired into the app (a prewarm after new lines, at most every 6 s) it did **not** help, measured on an 8-minute
+lecture: the question at the end still took 3.45 s to its first token, 54 prewarms cost 0.86 s each (the server
+re-reads about 600 tokens from its last checkpoint every time, even for two new lines), and catch-up cards
+running at the same moment got slower (first token up to 4.1 s, against 0.5 to 1.4 s). The reason: a catch-up
+sends a different slice of the timeline than a question, and the server keeps one cached prompt, so every
+catch-up throws away what the prewarm built. The wiring was taken out again; the function and the bench stay.
+To make it pay off, questions and catch-ups have to send the same timeline lines (and say in the instructions
+which part matters), so one cache serves both.
+
 ### Other
 
 - TTSKit loads with `download: false` from `models/argmax` (25 s first load in a new binary) and speaks.
