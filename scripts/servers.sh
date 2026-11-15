@@ -10,8 +10,13 @@ RUN="$ROOT/.run"; mkdir -p "$RUN"
 
 port_of() { case "$1" in answerer) echo 8080;; watcher) echo 8082;; esac; }
 
-# Is the process named in this server's pid file still there?
-alive() { [ -f "$RUN/$1.pid" ] && kill -0 "$(cat "$RUN/$1.pid")" 2>/dev/null; }
+# Is the process named in this server's pid file still there, and is it a llama-server? A pid file can
+# outlive its server, and the pid can then belong to another process.
+alive() {
+  [ -f "$RUN/$1.pid" ] || return 1
+  case "$(ps -p "$(cat "$RUN/$1.pid")" -o comm= 2>/dev/null)" in *llama-server*) return 0;; esac
+  return 1
+}
 
 # The pid of the llama-server listening on this server's port, if there is one. It is found from the port,
 # so it works when the pid file is missing or names another process. Prints nothing where lsof is missing.
