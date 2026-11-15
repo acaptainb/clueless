@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 7:10 pm ET by Yusuf
+Last updated: Sat Nov 14, 7:20 pm ET by Aziz
 
 ## People
 
@@ -115,6 +115,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T31 (new) Camera test window, for testing only: live webcam picture with the face box, a Focused / Distracted / No person label and the numbers behind the look-away trigger (yaw, pitch, limit, tracker state), to tune T05 by eye in T28 | Aziz | `aziz/camera-test` | Sat 7:20 pm | Being written on the Windows laptop. Touches `Sources/Clueless/` (Yusuf's folder): one new file plus small edits in `Presence.swift`, `AppState.swift`, `OverlayView.swift`, `App.swift` |
 | T30 (new) Look-away false start: the time before the first face is seen counted as an absence and fired a junk card about 7 s after launch (found on the Mac mini). Do not start the away clock until a face has been seen; do not fire on almost nothing missed | Yusuf | `yusuf/look-away-start` | Sat 7:10 pm | Being written on the MacBook |
 | T25 Ask a question by voice instead of typing (study mode; microphone + WhisperKit) | Yusuf | `yusuf/voice-ask` | Sat 7:00 pm | Being written on the MacBook |
 | T06 Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf | `yusuf/receipts` | Sat 6:45 pm | Written on the MacBook, compile-checked only. PR #15 (draft), in the test queue |
