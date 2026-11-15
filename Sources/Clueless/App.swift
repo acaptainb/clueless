@@ -46,6 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             panel.setFrameOrigin(NSPoint(x: f.maxX - 440, y: f.maxY - 460))
         }
         panel.orderFrontRegardless()
+        // Test hook: CLUELESS_CAMERA_TEST=1 opens the camera test window at launch (CameraTestView.swift).
+        if ProcessInfo.processInfo.environment["CLUELESS_CAMERA_TEST"] == "1" { state.openCameraTest() }
 
         // Global hotkeys (Carbon: no Accessibility permission needed).
         hotKeys = [
