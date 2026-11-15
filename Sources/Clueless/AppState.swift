@@ -306,6 +306,12 @@ final class AppState: ObservableObject {
     /// Never waits longer than `maxWait`.
     private func flushAudio(maxWait: TimeInterval = 2) async {
         let t0 = Date()
+        // Cutting in the middle of a word loses it ("Go ahead, Sam." became "Ahead, Sam." on the Mac mini).
+        // If the other side is speaking right now, give them up to half a second to reach a gap between words.
+        while Date().timeIntervalSince(lastThemSpeechAt) < 0.12, Date().timeIntervalSince(t0) < 0.5 {
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        let gapWait = Date().timeIntervalSince(t0)
         var flushed = 0
         for source in [Capture.Source.system, .mic] {
             guard var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
@@ -321,7 +327,7 @@ final class AppState: ObservableObject {
         while !flag.done, Date().timeIntervalSince(t0) < maxWait {
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
-        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)")")
+        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)"), waited for a gap \(String(format: "%.2f", gapWait))s")
     }
 
     private func runWatcher() {
