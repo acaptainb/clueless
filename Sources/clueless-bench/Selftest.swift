@@ -133,6 +133,19 @@ func runSelftest() {
     t.check("names: nobody is given a name they use for someone else",
             own["Speaker 2"] == ["maya"] && own["Speaker 1"] == ["sam", "priya"], "\(own)")
 
+    // T43: call notes keep what the user said early in the call, not only their lines in the capped list.
+    let noteRebuilt = [
+        TimelineLine(id: 10_001, t: base, source: .them, speaker: "Speaker 1", text: "Can you own the launch checklist?"),
+        TimelineLine(id: 10_002, t: base.addingTimeInterval(20), source: .them, speaker: "Speaker 2", text: "Next topic."),
+    ]
+    let noteEarly = TimelineLine(id: 3, t: base.addingTimeInterval(5), source: .me, text: "Yes, I will own it by Friday.")
+    let noteLate = TimelineLine(id: 250, t: base.addingTimeInterval(30), source: .me, text: "Sounds good.")
+    let noteStale = TimelineLine(id: 240, t: base.addingTimeInterval(25), source: .them, text: "A live line the rebuilt transcript replaces.")
+    let noteFull = SessionNotes.merge(rebuilt: noteRebuilt, lines: [noteStale, noteLate], ownLines: [noteEarly, noteLate]).map(\.id)
+    t.check("notes: the user's early lines are kept", noteFull == [10_001, 3, 10_002, 250], "\(noteFull)")
+    let noteShort = SessionNotes.merge(rebuilt: noteRebuilt, lines: [noteStale, noteLate], ownLines: nil).map(\.id)
+    t.check("notes: without them, as before", noteShort == [10_001, 10_002, 250], "\(noteShort)")
+
     // T26: every prompt file is found and matches the copy built into the code.
     for line in Prompts.report() {
         t.check("prompt " + line, line.hasSuffix("same as built-in"))

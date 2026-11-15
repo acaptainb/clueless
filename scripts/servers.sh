@@ -10,10 +10,44 @@ RUN="$ROOT/.run"; mkdir -p "$RUN"
 
 port_of() { case "$1" in answerer) echo 8080;; watcher) echo 8082;; esac; }
 
-# Stop one server by its pid file, if it is running.
+# Is the process named in this server's pid file still there, and is it a llama-server? A pid file can
+# outlive its server, and the pid can then belong to another process.
+alive() {
+  [ -f "$RUN/$1.pid" ] || return 1
+  case "$(ps -p "$(cat "$RUN/$1.pid")" -o comm= 2>/dev/null)" in *llama-server*) return 0;; esac
+  return 1
+}
+
+# The pid of the llama-server listening on this server's port, if there is one. It is found from the port,
+# so it works when the pid file is missing or names another process. Prints nothing where lsof is missing.
+listener() {
+  for cand in $(lsof -nP -iTCP:"$(port_of "$1")" -sTCP:LISTEN -t 2>/dev/null); do
+    case "$(ps -p "$cand" -o comm= 2>/dev/null)" in *llama-server*) echo "$cand"; return 0;; esac
+  done
+}
+
+# Does anything answer on this server's port? Also true while the model is still loading (HTTP 503).
+answering() { curl -s -o /dev/null --max-time 2 "http://127.0.0.1:$(port_of "$1")/health"; }
+
+# True if this server is already up or coming up, so it must not be launched a second time. A second
+# copy cannot take the port and exits, but its pid would replace the running server's in the pid file,
+# and `stop` could no longer find the one that is running. A pid file that was lost that way is put right here.
+running() {
+  alive "$1" && return 0
+  found="$(listener "$1")"
+  if [ -n "$found" ]; then echo "$found" > "$RUN/$1.pid"; return 0; fi
+  answering "$1"
+}
+
+# Stop one server: the process in its pid file, and a llama-server that holds its port without being in
+# the pid file. Then wait (5 s at most) until the port is free, so a new one can be started right away.
 stop_one() {
   [ -f "$RUN/$1.pid" ] && kill "$(cat "$RUN/$1.pid")" 2>/dev/null
   rm -f "$RUN/$1.pid"
+  found="$(listener "$1")"
+  [ -n "$found" ] && kill "$found" 2>/dev/null
+  n=0; while [ -n "$(listener "$1")" ] && [ $n -lt 25 ]; do sleep 0.2; n=$((n+1)); done
+  return 0
 }
 
 # Launch one server in the background. Does not wait for it to be ready.
@@ -48,11 +82,15 @@ wait_ready() {
 }
 
 # With a name: restart just that server (the old one is stopped first, so the port is free).
-# Without: launch both, as before, then wait for both.
+# Without: launch whichever of the two is not running yet, then wait for both. A server that is already
+# up is left alone (check.sh and the app call this when only one of them is down).
 start() {
   case "$1" in
     answerer|watcher) stop_one "$1"; launch "$1"; wait_ready "$1" ;;
-    "") launch answerer; launch watcher; wait_ready answerer; wait_ready watcher ;;
+    "") for s in answerer watcher; do
+          if running "$s"; then echo "$s is already running on port $(port_of "$s"): left alone"; else launch "$s"; fi
+        done
+        wait_ready answerer; wait_ready watcher ;;
     *) usage ;;
   esac
 }

@@ -176,7 +176,7 @@ struct CardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title).font(Style.cardTitle).lineLimit(2)
-            if card.task == .catchUp {
+            if !showsMessage {
                 row("You were asked", card.asked.isEmpty ? "Nothing directed at you." : card.asked)
                 row("You missed", card.missed)
                 if !card.reply.isEmpty { row("You could say", card.reply, highlight: true) }
@@ -199,6 +199,15 @@ struct CardView: View {
         .padding(Style.tilePadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glass()
+    }
+
+    /// True when the card is shown as one text and not as the three catch-up rows. A catch-up card whose
+    /// three fields are empty but which has a message is not a catch-up: it says why there is none ("The
+    /// Bonsai servers are still starting", "Bonsai did not answer"). Shown as rows, that message was
+    /// hidden and the card read "Nothing directed at you."
+    private var showsMessage: Bool {
+        card.task != .catchUp
+            || (card.asked.isEmpty && card.missed.isEmpty && card.reply.isEmpty && !card.answer.isEmpty)
     }
 
     // "You could say" is the line the user acts on: it gets the accent tint.
