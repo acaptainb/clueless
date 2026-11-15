@@ -422,6 +422,7 @@ final class AppState: ObservableObject {
         guard listening else { return }
         listening = false
         let samples = voice.stop()
+        Log.write("[voice] \(voice.summary)")
         guard samples.count > 8_000, let transcriber else {   // under half a second: nothing was said
             Log.write("[voice] nothing heard")
             return

@@ -26,17 +26,30 @@ final class VoiceRecorder {
     private var startedAt = Date()
     private var rate: Double = 48_000
     private var running = false
+    private var voiceProcessing = false
+    private var peakLevel: Float = 0
+    /// What the last recording looked like, for the log.
+    private(set) var summary = ""
 
     func start() throws {
         let input = engine.inputNode
-        // Echo cancellation, so the lecture playing through the speakers is not transcribed as the question.
-        try? input.setVoiceProcessingEnabled(true)
+        // Voice processing (echo cancellation) is OFF by default: on the Mac mini it ducked the system
+        // audio and the lecture transcript lost about 6 s while the microphone was on. Without it the
+        // lecture playing through the speakers can leak into the question, so speak close to the mic.
+        // CLUELESS_VOICE_PROCESSING=1 turns it back on with the least ducking macOS allows, to compare.
+        voiceProcessing = ProcessInfo.processInfo.environment["CLUELESS_VOICE_PROCESSING"] == "1"
+        if voiceProcessing {
+            try? input.setVoiceProcessingEnabled(true)
+            input.voiceProcessingOtherAudioDuckingConfiguration =
+                AVAudioVoiceProcessingOtherAudioDuckingConfiguration(enableAdvancedDucking: false, duckingLevel: .min)
+        }
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             throw NSError(domain: "Clueless", code: 3, userInfo: [NSLocalizedDescriptionKey: "No microphone found"])
         }
         lock.lock()
         samples = []; heardSpeech = false; startedAt = Date(); lastSpeech = Date(); rate = format.sampleRate
+        peakLevel = 0
         lock.unlock()
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in self?.take(buffer) }
@@ -51,11 +64,14 @@ final class VoiceRecorder {
         running = false
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
-        try? engine.inputNode.setVoiceProcessingEnabled(false)
+        if voiceProcessing { try? engine.inputNode.setVoiceProcessingEnabled(false) }
         lock.lock()
-        let raw = samples, heard = heardSpeech, rate = rate
+        let raw = samples, heard = heardSpeech, rate = rate, peak = peakLevel
         samples = []
         lock.unlock()
+        // Says whether the microphone delivered audio at all (0.0 s or a peak of 0 means it did not).
+        summary = String(format: "%.1f s recorded, loudest buffer %.4f (speech is above %.3f), voice processing %@",
+                         Double(raw.count) / rate, peak, speechLevel, voiceProcessing ? "on" : "off")
         return heard ? Self.resample(raw, from: rate) : []
     }
 
@@ -70,6 +86,7 @@ final class VoiceRecorder {
         let now = Date()
         lock.lock()
         samples.append(contentsOf: chunk)
+        peakLevel = max(peakLevel, level)
         if level > speechLevel { heardSpeech = true; lastSpeech = now }
         let done = (heardSpeech && now.timeIntervalSince(lastSpeech) > pauseSeconds)
             || (!heardSpeech && now.timeIntervalSince(startedAt) > silenceSeconds)
