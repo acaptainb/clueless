@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 9:00 pm ET by Aziz (Mac mini session)
+Last updated: Sat Nov 14, 10:40 pm ET by Aziz (Mac mini session)
 
 ## People
 
@@ -60,7 +60,7 @@ Code is not done until it has passed on the Mac mini. After pushing a branch, ad
 STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
 once the PR is merged.
 
-Mac mini in use right now by: Aziz (T37, Mac mini session; the app is closed)
+Mac mini in use right now by: nobody
 
 Run order: the top row (`main` with PR #8) is next, ahead of any row added later; new rows go BELOW it. A `main` that does not run blocks every other branch.
 Then the Yusuf rows, then the remaining Aziz rows 2 to 4 in order. Row 3 makes the recordings that the top
@@ -128,6 +128,7 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 ### Performance (the main focus)
 | ID | Task | Suggested |
 |---|---|---|
+| T40 | First word late in a long session: 3.4 s after 20 minutes (120 lines, nothing cached). `Answerer.prewarm` cuts a cold 8 s to 1.6 s in the bench, but wired into the app it did not help, because catch-ups and questions send different slices of the timeline and the server keeps one cached prompt (BENCHMARKS.md section 8). Make both card types send the same lines, with the instructions saying which part matters, then call `prewarm` after new lines and after each card | Aziz and Yusuf |
 
 ### M3 Call mode
 | ID | Task | Suggested |
