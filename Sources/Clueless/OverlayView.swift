@@ -3,6 +3,8 @@ import CluelessCore
 
 struct OverlayView: View {
     @ObservedObject var state: AppState
+    /// Reports the height the content needs, so the panel can be sized to fit it (App.swift).
+    var onHeight: (CGFloat) -> Void = { _ in }
     @FocusState private var questionFocused: Bool
 
     var body: some View {
@@ -12,13 +14,22 @@ struct OverlayView: View {
             transcript
             askBar
             if state.thinking { thinkingRow }
-            if let card = state.card { CardView(title: state.cardTitle, card: card, timeline: state.timeline) }
-            Spacer(minLength: 0)
+            if let card = state.card {
+                // As tall as the card needs, up to a limit; a longer card (session notes) scrolls
+                // instead of pushing the HUD off the panel.
+                ScrollView { CardView(title: state.cardTitle, card: card, timeline: state.timeline) }
+                    .frame(maxHeight: 380)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             hud
         }
         .padding(14)
         .frame(width: 420)
-        .frame(minHeight: 300)
+        // Take the natural height and tell the panel, which resizes to fit. Before this the content
+        // could be taller than the window and overflowed at both ends, hiding the HUD.
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { onHeight($0) }
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(.regularMaterial)
         .onChange(of: state.focusQuestion) { questionFocused = true }
     }
@@ -113,20 +124,7 @@ struct OverlayView: View {
         }
     }
 
-    private var hud: some View {
-        let h = state.hud
-        return HStack(spacing: 10) {
-            Label(h.online ? "network on (unused)" : "network off", systemImage: h.online ? "wifi" : "wifi.slash")
-                .foregroundStyle(h.online ? Color.secondary : Color.green)
-            Text("stt \(h.stt, specifier: "%.1f")s")
-            Text("ocr \(h.ocr, specifier: "%.1f")s")
-            Text("9B \(h.llm, specifier: "%.1f")s · \(h.tps, specifier: "%.0f") tok/s")
-            Text("\(h.ramMB) MB")
-            Circle().fill(h.answerer ? Color.green : Color.red).frame(width: 6, height: 6).help("Bonsai 9B answerer")
-            Circle().fill(h.watcher ? Color.green : Color.red).frame(width: 6, height: 6).help("Bonsai watcher")
-        }
-        .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary).lineLimit(1)
-    }
+    private var hud: some View { HUDView(hud: state.hud) }
 }
 
 struct CardView: View {
