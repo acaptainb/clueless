@@ -213,6 +213,29 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Bring the timeline up to the present: transcribe whatever audio is still sitting in the chunkers
+    /// and wait for the transcription queue, so a card is not built without the last few seconds.
+    /// Never waits longer than `maxWait`.
+    private func flushAudio(maxWait: TimeInterval = 2) async {
+        let t0 = Date()
+        var flushed = 0
+        for source in [Capture.Source.system, .mic] {
+            guard var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
+            chunkers[source] = chunker
+            enqueue(chunk, source: source)
+            flushed += 1
+        }
+        guard let chain = sttChain else { return }
+        // Waiting on a task cannot be cancelled, so poll a flag against the deadline instead.
+        final class Flag: @unchecked Sendable { var done = false }
+        let flag = Flag()
+        Task { @MainActor in await chain.value; flag.done = true }
+        while !flag.done, Date().timeIntervalSince(t0) < maxWait {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)")")
+    }
+
     private func runWatcher() {
         let lines = timeline.last(8).filter { $0.source == .them || $0.source == .me }
         Task {
@@ -242,17 +265,24 @@ final class AppState: ObservableObject {
             timeline.append(.webcam, "Looked away", at: at)
         case .returned(let seconds, let since):
             timeline.append(.webcam, "Looked back after \(Int(seconds)) s")
-            // Only worth a card if the user was gone a while and somebody said something meanwhile.
-            let missed = timeline.recent(seconds: Date().timeIntervalSince(since), maxLines: 200)
-                .filter { $0.source == .them }
-            Log.write("[presence] back after \(Int(seconds)) s, \(missed.count) lines missed")
-            guard recording, seconds >= 5, !missed.isEmpty, !thinking,
-                  Date().timeIntervalSince(lastWatchTrigger) > 20 else { return }
-            lastWatchTrigger = Date()
-            // Only the absence plus a short lead-in for context. A wider window made the card summarise
-            // everything said so far instead of what was missed (seen in the Mac mini test).
-            let window = min(600, seconds + 20)
-            Task { await run(.catchUp, title: "While you looked away (\(Int(seconds)) s)", window: window) }
+            guard recording, seconds >= 5, !thinking, Date().timeIntervalSince(lastWatchTrigger) > 20 else {
+                Log.write("[presence] back after \(Int(seconds)) s, no card")
+                return
+            }
+            Task {
+                // What was said while away may still be in the audio buffer: transcribe it before counting.
+                await flushAudio()
+                // Only worth a card if somebody said something meanwhile.
+                let missed = timeline.recent(seconds: Date().timeIntervalSince(since), maxLines: 200)
+                    .filter { $0.source == .them }
+                Log.write("[presence] back after \(Int(seconds)) s, \(missed.count) lines missed")
+                guard !missed.isEmpty, !thinking else { return }
+                lastWatchTrigger = Date()
+                // Only the absence plus a short lead-in for context. A wider window made the card summarise
+                // everything said so far instead of what was missed (seen in the Mac mini test).
+                let window = min(600, Date().timeIntervalSince(since) + 20)
+                await run(.catchUp, title: "While you looked away (\(Int(seconds)) s)", window: window)
+            }
         }
     }
 
@@ -289,6 +319,8 @@ final class AppState: ObservableObject {
         var screenText = "", image: Data?
         let method: ScreenMethod = task == .notes ? .none : screenMethod
         var shot: CGImage?
+        // While the screen is being read, finish transcribing the audio that is still buffered.
+        async let audioFlushed: Void = flushAudio()
         if method != .none {
             do { shot = try await capture.screenshot() } catch { Log.write("[screenshot failed] \(error.localizedDescription)") }
         }
@@ -304,8 +336,12 @@ final class AppState: ObservableObject {
             if !screenText.isEmpty { timeline.append(.screen, String(screenText.prefix(300))) }
         }
 
+        await audioFlushed
+        // Default windows are stepped (T09): the first line only changes once a minute, so the Bonsai server
+        // reuses its cache between requests. A window given by the caller (look-away) is kept exact.
+        let step: TimeInterval = window == nil ? 60 : 0
         let window: TimeInterval = window ?? (task == .notes ? 3600 : (task == .catchUp ? 150 : 300))
-        let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45)
+        let lines = timeline.recent(seconds: window, maxLines: task == .notes ? 200 : 45, step: step)
             .filter { $0.source == .them || $0.source == .me }
         do {
             let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
