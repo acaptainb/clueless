@@ -306,7 +306,8 @@ final class AppState: ObservableObject {
             let line = self.timeline.append(source == .mic ? .me : .them, text, at: chunk.startedAt)
             Log.write("[stt \(String(format: "%.2f", self.hud.stt))s] \(line.rendered)")
             self.tail = self.timeline.last(40).filter { $0.source == .them || $0.source == .me }.suffix(5).map { $0 }
-            if self.mode == .call, line.source == .them { self.runWatcher() }
+            // No automatic card from audio that is only transcribed after Pause (the cut in `stop()`).
+            if self.mode == .call, line.source == .them, self.wantRecording { self.runWatcher() }
         }
     }
 

@@ -30,6 +30,8 @@ extension AppState {
         let ns = error as NSError?
         Log.write("[capture] stopped: \(ns?.domain ?? "") \(ns?.code ?? 0) \(error?.localizedDescription ?? "")")
         if let ns, ns.domain == SCStreamErrorDomain, ns.code == SCStreamError.Code.userStopped.rawValue {
+            // Same as Pause: `start()` resets the chunkers, so transcribe what is still waiting in them now.
+            cutBufferedAudio()
             wantRecording = false
             status = "Capture was stopped from the menu bar. Press play to resume."
             return
