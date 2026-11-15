@@ -30,7 +30,9 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
 
     func start(microphone: Bool) async throws {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        guard let display = content.displays.first else {
+        // The main display (the one with the menu bar), not whichever is listed first: with a projector or
+        // a second monitor the first one may not be the screen the lecture is on.
+        guard let display = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) ?? content.displays.first else {
             throw NSError(domain: "Clueless", code: 1, userInfo: [NSLocalizedDescriptionKey: "No display found"])
         }
         self.display = display
