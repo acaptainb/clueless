@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 1:40 am ET by Yusuf
+Last updated: Sun Nov 15, 1:45 am ET by Yusuf
 
 ## People
 
@@ -68,7 +68,6 @@ row (steps 6 and 7) and row 4 use.
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
-| `yusuf/review-fixes` | Yusuf | T41 (PR #37), `check.sh yusuf/review-fixes app`. Without a person: (1) a normal launch logs four `[hotkey] registered Option + key code N` lines (49, 8, 1, 9); any `could NOT register` line names a hotkey another app owns. (2) The demo call through `CLUELESS_AUDIO_FILE` with `CLUELESS_TEST_MODE=call` and `CLUELESS_TEST_NOTES=1` behaves as on `yusuf/small-fixes`: both name cards, notes with Maya, Sam, Priya. (3) `CLUELESS_TEST_QUESTION` with the lecture file: the question and the catch-up 15 s later both give a card (a question now waits for a card in progress instead of being dropped). With a person (T28, see `team/yusuf/SHIP.md`): type a question while a look-away card is being written: it is answered afterwards; Option+S during a streaming card: the voice finishes its sentence and does NOT start again; call mode on the loudspeakers: the call's voices and the spoken card do not show up as "You" lines, and speaking in the 8 s gaps does (if "You" never appears, relaunch with `CLUELESS_MIC_GATE=0` and say so); click play twice quickly: one transcript, not doubled; Cmd+V pastes into the question field, Cmd+Q quits; "…" menu, "Your name: Yusuf…" opens a dialog and saving changes the name; while a name-first question is still being said the panel shows "Listening to the rest of the question…" | not run yet |
 
 ## Milestones
 
@@ -109,7 +108,6 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| T41 (new) Fixes from an independent review of the app code: a typed question is no longer dropped while a card is being written; Option+S no longer lets speech start again; in call mode the microphone no longer turns the loudspeakers into "You" lines; capture cannot be started twice; main menu (paste, quit); the name can be edited; screenshots use the main display; hotkey registration is logged | Yusuf | `yusuf/review-fixes` | Sun 1:30 am | Written on the MacBook, compile-checked only. PR #37 (draft), in the test queue |
 
 ## Up next
 
@@ -160,6 +158,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T41 Nine fixes from an independent review of the app code: a typed question waits for a card in progress instead of being dropped; Option+S no longer lets speech start again; in call mode microphone audio is dropped while the loudspeakers or Clueless are speaking (`CLUELESS_MIC_GATE=0` turns that off); capture cannot be started twice; main menu (paste, quit); "Your name" dialog; screenshots use the main display; hotkey registration logged; a placeholder card while a question is still being said. `check.sh` PASS, all four hotkeys register, demo call and lecture runs unchanged. The behaviours themselves need a person: `team/yusuf/SHIP.md` | Yusuf | Sun 1:45 am | PR #37 |
 | T39 Small fixes: the file test hook plays in real time (was 4.5% slow); entering call mode starts a new call for the notes; Whisper's "you" / "Thank you." lines on near-silence are dropped (checked by reading only: none occurred in the test); the look-away log says why no card was made. `check.sh` PASS. Not done: the camera test window retry | Yusuf | Sun 1:35 am | PR #35 |
 | T38 A name-triggered catch-up card waits for the speaker to finish (0.8 s of quiet, 6 s at most). `check.sh` PASS; on the demo call the name-first question waited 5.2 s and the card has the question ("Can your team still hit Friday for the release candidate?", empty on `main`); a question with the name inside it waited 0.0 s | Yusuf | Sun 1:28 am | PR #34 |
 | T03 Whole app run on the Mac mini with Wi-Fi off: worked (Aziz, in person; Wi-Fi is this Mac's only network connection). No timings taken | Aziz | Sun 1:20 am | BENCHMARKS.md section 1, WORKLOG |
