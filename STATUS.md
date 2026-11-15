@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 11:00 am ET by Aziz
+Last updated: Sun Nov 15, 11:10 am ET by Aziz
 
 ## People
 
@@ -68,6 +68,7 @@ row (steps 6 and 7) and row 4 use.
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
+| `aziz/study-fixes` | Aziz | T50 (PR #47), four study-mode changes asked for by Aziz in person. Written on Windows, never compiled. `check.sh aziz/study-fixes app`; gate numbers unchanged (no engine change). With a person, lecture playing: (1) under the question field there is a second row: Catch me up, "Speaking", "Reply", and the "…" menu at the right; the placeholder in the question field is no longer cut off; the menu has no "Speak answers" entry. (2) Click "Speaking": it reads "Silent", a voice that is playing stops, the next card is not spoken; click again: the next card is spoken. (3) Click "Reply": the blue "You could say" box disappears from the catch-up card on screen and from the next one; click again: it is back. (4) Open the camera window and watch the eye next to "Clueless": it turns orange and slashed at the same moment the window says "Distracted" or "No person", and green when it says "Focused". (5) Look away 3 to 4 s and back: the log has no `Looked away` line; look away 8 s and back: a card titled with the seconds, as before. If a button label does not change when clicked (the setting changed but the view did not redraw), say so | not run yet |
 
 ## Milestones
 
@@ -108,7 +109,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| T50 (new) Study mode, from Aziz's in-person test of `main @ aee6bbd`: a button that hides the blue "You could say" box; "Speak answers" as a button next to Catch me up instead of a menu entry; the eye next to "Clueless" follows the camera at once (it lagged by seconds); looking away counts after 4.5 s, not 3 s | Aziz | `aziz/study-fixes` | Sun 11:00 am | After the feature freeze: asked for by Aziz during the demo test. Being written on the Windows laptop, cannot be compiled there. In `Sources/Clueless/` (Yusuf's folder), one small PR |
+| T50 (new) Study mode, from Aziz's in-person test of `main @ aee6bbd`: a button that hides the blue "You could say" box; "Speak answers" as a button next to Catch me up instead of a menu entry; the eye next to "Clueless" follows the camera at once (it lagged by seconds); looking away counts after 4.5 s, not 3 s | Aziz | `aziz/study-fixes` | Sun 11:00 am | After the feature freeze: asked for by Aziz during the demo test. Pushed (PR #47, draft), written on the Windows laptop, never compiled; in the test queue. In `Sources/Clueless/` (Yusuf's folder: `OverlayView.swift`, `AppState.swift`, `Presence.swift`, `CameraTestView.swift`), one small PR |
 
 ## Up next
 
