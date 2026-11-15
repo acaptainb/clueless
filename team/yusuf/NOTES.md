@@ -5,13 +5,13 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Working on now
 
-(nothing claimed in session #1) Merged: T05, T16, T17, T07, T29, T20, T30, T25. T06 (`yusuf/receipts`, session #2) is merged too (PR #15). Never use `@State` in the app: it does not compile on the Mac mini (no Xcode).
+Session #1, Sun 2:40 am: T38 is merged (PR #34). T39 (`yusuf/small-fixes`, PR #35) and T41 (`yusuf/review-fixes`, PR #37, stacked on it) are pushed and queued. Everything earlier is merged (T05, T06, T07, T16, T17, T20, T25, T29, T30, T32, T33).
 
 ## Pushed, waiting for a Mac mini test
 
-- `yusuf/call-notes-app` (T33, PR #24, session #2): call notes wired into the app. Watch for: SpeakerKit models missing on the Mac mini; names not matching `demo/call/expected.json`; how long labels and names take before the notes start. Session #2 works in `.worktrees/receipts`.
-- Nothing from session #1. `main` after the T30 and T25 merges is compile-checked on the MacBook only.
-- In-person tests for everything are deferred to the end: T28 in STATUS.md.
+- `yusuf/review-fixes` (T41) contains `yusuf/small-fixes` (T39). Merge #35 first, then #37; or only #37 and close #35. The riskiest change is the microphone gate in call mode (`micHearsSpeakers` in `AppState.swift`): if "You" lines never appear live, `CLUELESS_MIC_GATE=0`.
+- Option+S stops after the sentence being spoken, not mid-word (core change suggested to Aziz in the work log, not made).
+- Still needing a person (T28 and T01, T02, T11, T12): hotkeys, a typed and a spoken question, the server warning row, capture restart, speech order by ear, long-card scroll, receipts click. Real look-aways work (in-person log, Sat 10:45 pm: 4 of 4 cards, 31 short glances ignored).
 
 ## Ideas and things to remember
 

@@ -74,6 +74,8 @@ final class AppState: ObservableObject {
     private var chunkers: [Capture.Source: AudioChunker] = [:]
     private var sttChain: Task<Void, Never>?
     private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
+    /// When the other side was last heard speaking (system audio above the chunker's pause level). T38.
+    private var lastThemSpeechAt = Date.distantPast
     let webcam = Presence()            // not private: the camera test window reads its frames (T31)
     private let voice = VoiceRecorder()
     private var webcamOn = false
@@ -242,7 +244,12 @@ final class AppState: ObservableObject {
     nonisolated private func ingest(_ source: Capture.Source, _ samples: [Float]) {
         work.async { [weak self] in
             guard let self else { return }
+            // Is somebody on the other side speaking in this buffer? Same level the chunker calls a pause.
+            var energy: Float = 0
+            if source == .system { for v in samples { energy += v * v } }
+            let speaking = !samples.isEmpty && (energy / Float(samples.count)).squareRoot() >= 0.006
             Task { @MainActor in
+                if speaking { self.lastThemSpeechAt = Date() }
                 // In a call, keep the other side's audio for the speaker labels in the notes (T33).
                 if source == .system, self.mode == .call { self.sessionAudio.append(samples) }
                 guard var chunker = self.chunkers[source] else { return }
@@ -312,9 +319,23 @@ final class AppState: ObservableObject {
             // One automatic catch-up per 20 s at most, and never on top of one in progress.
             if decision.needsUser, !thinking, Date().timeIntervalSince(lastWatchTrigger) > 20 {
                 lastWatchTrigger = Date()
+                await waitForThemToFinish()
                 await run(.catchUp, title: decision.reason == "name" ? "You were called on" : "A question for you")
             }
         }
+    }
+
+    /// The name is often said before the question ("One more question. Yusuf." and only then the question),
+    /// and a card built at once does not have it (seen on the Mac mini). Wait until the other side has been
+    /// quiet for a moment, so the card is built when the speaker has finished. A question that ended with the
+    /// name is already followed by silence and does not wait at all.
+    private func waitForThemToFinish(quiet: TimeInterval = 0.8, maxWait: TimeInterval = 6) async {
+        let t0 = Date()
+        while !thinking, Date().timeIntervalSince(lastThemSpeechAt) < quiet, Date().timeIntervalSince(t0) < maxWait {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        let waited = Date().timeIntervalSince(t0)
+        Log.write("[watcher] needs you; waited \(String(format: "%.1f", waited)) s for the speaker to finish\(waited >= maxWait ? " (still speaking, gave up)" : "")")
     }
 
     // MARK: look-away trigger
