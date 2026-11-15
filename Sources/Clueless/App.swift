@@ -50,6 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installMainMenu()
         // Test hook: CLUELESS_CAMERA_TEST=1 opens the camera test window at launch (CameraTestView.swift).
         if ProcessInfo.processInfo.environment["CLUELESS_CAMERA_TEST"] == "1" { state.openCameraTest() }
+        // Test hook: CLUELESS_TEST_T41=<seconds> exercises three T41 fixes with nobody at the Mac (TestHooks.swift).
+        state.runT41TestIfAsked()
         // Test hook: CLUELESS_CAMERA_TEST_CLOSE=<seconds> closes that window again after a delay, the way the
         // red button does, so "closing it must not quit the app" can be checked with nobody at the Mac.
         if let s = ProcessInfo.processInfo.environment["CLUELESS_CAMERA_TEST_CLOSE"], let seconds = Double(s) {

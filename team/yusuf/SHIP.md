@@ -1,27 +1,53 @@
 # Sunday: what is left, in order
 
-Written Sun Nov 15, 1:18 am by Yusuf's MacBook session (updated 1:40 am), from STATUS.md, WORKLOG.md and the in-person log
-of Sat night. Deadline: submit by 11:30 am (hard cutoff 12:00 noon). Feature freeze 2:00 am: after that,
-fixes only.
+Assessment written Sun Nov 15, 2:25 am by Yusuf's MacBook session, from STATUS.md, WORKLOG.md, the
+in-person log of Sat night and the Mac mini runs of Sun 1:20 to 2:20 am. Deadline: submit by 11:30 am
+(hard cutoff 12:00 noon). The feature freeze (2:00 am) has passed: fixes and testing only.
 
-## Where things stand
+## How complete is it
+
+| Milestone | Built | Proven | What is missing |
+|---|---|---|---|
+| M0 Smoke tests | 100% | Yes, including one run with Wi-Fi off (Aziz, in person) | Timings with Wi-Fi off were not written down |
+| M1 Study mode | 100% | Scripted: paper 11/11, slides 7/7, lecture audio 5/5. Live: transcript, spoken answers, a question and a catch-up through live capture (Sun 2:00 am) | A person pressing the hotkeys and typing or speaking a question. The screen half of the last live run was not tested: the Mac mini was locked |
+| M2 Catch-up | 100% | Look-away seen with a real person: 4 of 4 cards, 31 glances ignored. Receipts saved | Click to enlarge a receipt |
+| M3 Call mode | 100% | On the demo call from a file: name trigger with the question in the card, notes naming all three speakers | Never run with a real microphone and loudspeakers; the new microphone gate is untested |
+| M4 Pro features | 0% | | Dropped: the key came without the SDK download token |
+| M5 Ship | about 50% | HUD, README and known issues are current | The video, the final README pass, the tags, the submission |
+
+In one line: the app is built; what is left is about 45 minutes of a person trying it, the video, and
+the submission. Nothing left needs new features.
+
+## What is proven, and how
 
 | Area | State | Seen by a person? |
 |---|---|---|
-| Study mode: live transcript, typed question, screen answers | Works in scripted runs; paper 11/11, lecture slides 7/7, lecture audio 5/5 | Transcript yes. A typed question: no |
-| Look-away catch-up (the hero feature) | Works with a real person: 4 of 4 cards, 31 short glances ignored, no crash in 2.5 h | Yes (Aziz, Sat 10:45 pm) |
-| Spoken answers | Queued 1.7 to 2.0 s after the trigger; not transcribed back | Yes (Aziz, Sat night) |
-| Hotkeys ⌥Space, ⌥C, ⌥S, ⌥V | Wired | No |
-| Spoken question (⌥V) | Wired; never tried with a real voice | No |
-| Call mode: You / Them, name trigger, notes with names | Works on the demo call through the file hook (Maya, Sam, Priya named) | No: needs the microphone and the speakers |
-| Servers restart, capture restart | Server restart seen in a scripted kill; capture restart has never fired | No |
-| Wi-Fi off (hard rule 3) | Ran fine with Wi-Fi off (Aziz, Sat night; Wi-Fi is the Mac mini's only connection). No timings written down; repeat once on the final build | Yes |
-| Soak | 22 min through the file hook: no crash, memory flat | Live half not done |
+| Look-away catch-up (the hero feature) | 4 of 4 cards, 31 short glances ignored, no crash in 2.5 h | Yes (Aziz, Sat 10:45 pm) |
+| Spoken answers | Queued 1.7 to 2.0 s after the trigger; never transcribed back, in six runs | Yes (Aziz) |
+| Wi-Fi off (hard rule 3) | Ran fine with Wi-Fi off; Wi-Fi is the Mac mini's only connection | Yes (Aziz). Repeat once on the final build for timings |
+| Live capture after tonight's changes | 54 lines, none doubled, question 2.9 s, catch-up 3.7 s | No (unattended). A later card read the real main display (2661 OCR characters) |
+| A question typed while a card is being written | Answered afterwards (test hook, Sun 2:02 am); it was dropped before | No |
+| Name trigger waits for the question | Card has the question; 5.2 s wait when the name comes first, 0 s otherwise | No |
+| Hotkeys ⌥Space, ⌥C, ⌥S, ⌥V | All four register with macOS | Never pressed by a person |
+| Spoken question (⌥V) | Wired | Never tried with a voice |
+| Call mode with a microphone, microphone gate | Wired | No: needs sound, postponed to the morning |
+| Servers restart themselves | Seen after a scripted kill | The warning row has not been looked at |
+| Capture restarts itself | Has never fired; a test hook for it is running | No |
+| Soak | 22 min through the file hook and 20 min 45 s with live capture (Sun 2:06 am): no crash, no capture stall, 405 lines, transcription 0.4 s per chunk at both ends, memory flat over the last six minutes (app 0.38 GB, 9B 1.65 GB, 4B 0.42 GB) | Unattended |
 
-Open code: PR #35 (T39, small fixes) and PR #37 (T41, nine fixes from an independent review of the app
-code, stacked on #35), both waiting for the Mac mini. T38 is merged (PR #34): on the demo call the
-name-first question now gives a card with the question in it. Nothing else is planned. T40 (slow first
-word after 20 minutes) is not worth the risk now: the video is 2 minutes and the live demo 4.
+## Open pull requests and who decides
+
+- PR #38 (T42): cards no longer say "Them explained…". Gate and benchmarks equal to `main`. A prompt in
+  Aziz's area: his call.
+- PR #39 (T45): the test hook `CLUELESS_TEST_T41`. Testing only. Merge after its runs.
+- PR #40: BENCHMARKS.md known issues, docs only. Aziz's file.
+- Aziz has claimed T43 (engine: ⌥S stops mid-word, long call notes, `servers.sh`) and T44 (app: pause
+  during a restart, pause losing queued audio, the failed catch-up card). Neither is pushed yet. T44 was
+  read before T41 was merged and will need `main` merged in.
+
+Known and accepted (see BENCHMARKS.md, Known issues): a catch-up can report slide text as said, or attach
+a detail to the wrong item; the watcher sometimes fires on a question to the whole group; a word can be
+lost where a card is built mid-sentence; first word is slow after 20 minutes.
 
 ## 1. In-person session at the Mac mini (about 45 min, in this order)
 
@@ -84,6 +110,9 @@ for the timings and for the default Hugging Face folder.**
 and the webcam on. Note the three memory numbers in the HUD at the start and the end.
 
 ## 2. Video, under 2 minutes (T23)
+
+Before recording: close every window that shows anything private and delete `sessions/` (receipts save
+whatever is on screen; on Sun 2:19 am one caught a credentials file open in an editor).
 
 Record the Mac mini's screen with Wi-Fi off and the Wi-Fi icon visible in the menu bar. Judging order is
 use of Bonsai and Argmax first, so say which model does what while it happens.
