@@ -60,7 +60,7 @@ Code is not done until it has passed on the Mac mini. After pushing a branch, ad
 STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
 once the PR is merged.
 
-Mac mini in use right now by: Aziz (T18 soak test, about 22 minutes from 8:54 pm, Mac mini session)
+Mac mini in use right now by: Aziz (T37, Mac mini session; the app is closed)
 
 Run order: the top row (`main` with PR #8) is next, ahead of any row added later; new rows go BELOW it. A `main` that does not run blocks every other branch.
 Then the Yusuf rows, then the remaining Aziz rows 2 to 4 in order. Row 3 makes the recordings that the top
@@ -141,7 +141,7 @@ Unclaimed. "Suggested" is only a suggestion; whoever claims it in the table abov
 | ID | Task | Suggested |
 |---|---|---|
 | T39 | Small things from the code review of T31 and T33 (WORKLOG, Sat 8:25 pm): the `CLUELESS_AUDIO_FILE` hook plays 3 to 4% slower than real time; Study -> Call -> Study mixes study lines into call notes; the look-away test hook gives no card when the setting is off; the camera test window does not retry after "camera unavailable" | Yusuf |
-| T18 | 20-minute soak test: memory, lag and crashes over a long session | both |
+| T18 | Soak test, second half: 20 minutes with LIVE capture (ScreenCaptureKit, speakers, webcam, spoken cards). The file-fed half is done (see Done) | both |
 | T28 | In-person live tests deferred until the features are built (Yusuf's decision, Sat 6:45 pm). T05: allow the Camera prompt; eye icon shows; look away 10 s while audio plays then back gives a card; a 1 to 2 s glance does nothing; silence gives no card; pause turns the camera off; tune `maxAngle` / `awayAfter` in `Presence.swift`. T16: orange row and HUD dots while servers start; Restart button; a question during a restart gets a "still starting" card; servers are not restarted mid-answer. T17: display sleep or monitor unplug restarts capture; "Stop sharing" in the menu bar is not undone; pause stays paused; Study/Call switch keeps listening. T07: speech starts before the card finishes; sentences in order, none twice; Option+S stops it at once; a new question cuts off the old speech. T20: ask for session notes and check that a long card scrolls inside the panel. T25: press Option+V and ask a real question out loud while a lecture plays through the speakers; it is transcribed and answered; the lecture is not what gets asked; compare `CLUELESS_VOICE_PROCESSING=0`; a voice question asked while a card is being written is answered afterwards, not lost. T06: click the thumbnail under RECEIPTS to enlarge it inside the card (it scrolls, the HUD stays visible) and again to shrink it; the arrow opens the saved file; a new question replaces the thumbnail; session notes show none | both |
 
 ### M5 Ship
@@ -163,6 +163,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T18 (first half) 22-minute soak with a lecture fed through the file hook: 340 lines, no crash, app 300 to 366 MB, answerer 1.2 GB, watcher 0.25 to 0.29 GB, transcription 0.40 s per chunk at the start and at the end. The question at the end was right but slow to start (3.4 s to first token with 120 lines) | Aziz | Sat 9:18 pm | BENCHMARKS.md, WORKLOG |
 | T36 `clueless-bench lecture`: the lecture's audio-only questions in one run, 4/5 on the demo lecture (the miss is a lost word at a forced cut, T37). TTSKit loads with `download: false` | Aziz | Sat 8:55 pm | PR #30 |
 | T34 Catch-up cards come from what was said: screen text labelled as background and cut to 600 characters, no model call when nothing was said. `clueless-bench grounding` 12/12 | Aziz | Sat 8:50 pm | PR #29 |
 | T35 Call notes with real speakers and names: the recording is transcribed again per speaker turn, names come from who is addressed and who answers (in code). Names bench 7/12 -> 12/12; notes on the demo call say Maya, Sam, Priya, in the bench and in the app. Demo call voices fixed (Samantha, Daniel, Tara) | Aziz | Sat 8:45 pm | PR #28 |
