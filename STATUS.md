@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sat Nov 14, 7:46 pm ET by Yusuf
+Last updated: Sat Nov 14, 7:50 pm ET by Yusuf
 
 ## People
 
@@ -114,6 +114,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T32 (new) Questions send at most 45 timeline lines, so a question at the end of the 162 s demo lecture could not see an early line ("When are office hours?" was not answerable; found on the Mac mini). Raise the cap for questions to 120 | Yusuf | `yusuf/question-lines` | Sat 7:50 pm | Being written on the MacBook |
 | T31 (new) Camera test window, for testing only: live webcam picture with the face box, a Focused / Distracted / No person label and the numbers behind the look-away trigger (yaw, pitch, limit, tracker state), to tune T05 by eye in T28 | Aziz | `aziz/camera-test` | Sat 7:20 pm | Pushed (542c0b2), written on the Windows laptop, never compiled; in the test queue. Touches `Sources/Clueless/` (Yusuf's folder): one new file plus small edits in `Presence.swift`, `AppState.swift`, `OverlayView.swift`, `App.swift` |
 | T06 Receipts for screen sources: save the screenshot, set `snapshot` on the timeline line, show it in the card | Yusuf | `yusuf/receipts` | Sat 6:45 pm | Written on the MacBook, compile-checked only. PR #15 (draft), in the test queue |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
