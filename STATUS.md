@@ -109,6 +109,8 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T43 (new) Three engine bugs found by reading `main @ 8d9727e`: Option+S and a voice question do not stop audio that is already playing (`Speaker.stop` only cancels a task the speech queue never sets); call notes drop the user's earlier lines when the call has more than 200 lines; `servers.sh start` with one server already up launches both and overwrites the pid file of the healthy one | Aziz | `aziz/engine-fixes` | Sun 1:55 am | Being written on the Windows laptop, cannot be compiled there. One call-site line in `Sources/Clueless/CallNotes.swift` (Yusuf's folder) goes with the core change |
+| T44 (new) Three app bugs found by reading `main @ 8d9727e`: Pause pressed while capture is restarting is undone when the restart finishes; Pause throws away the audio still waiting to be transcribed; a failed catch-up card shows "Nothing directed at you" instead of the error | Aziz | `aziz/app-fixes` | Sun 1:55 am | Being written on the Windows laptop, cannot be compiled there. In `Sources/Clueless/` (Yusuf's folder: `CaptureRestart.swift`, `AppState.swift`, `OverlayView.swift`), as a separate small PR; Aziz asked for these fixes |
 | T42 (new) Cards must not say "Them" ("Them explained that…", seen in the in-person test): one line in the catch-up and question prompts, and the same in the built-in copies. In Aziz's folders, as a separate small PR | Yusuf | `yusuf/prompt-them` | Sun 1:47 am | Written on the MacBook, compile-checked only. PR #38 (draft), in the test queue |
 
 ## Up next
