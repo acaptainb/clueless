@@ -19,7 +19,8 @@ struct OverlayView: View {
                 // instead of pushing the HUD off the panel.
                 ScrollView {
                     CardView(title: state.cardTitle, card: card, timeline: state.timeline,
-                             screen: state.screenReceipt, toggleScreen: { state.screenReceipt?.enlarged.toggle() })
+                             screen: state.screenReceipt, toggleScreen: { state.screenReceipt?.enlarged.toggle() },
+                             named: state.namedLines)
                 }
                     .frame(maxHeight: 380)
                     .fixedSize(horizontal: false, vertical: true)
@@ -148,6 +149,8 @@ struct CardView: View {
     /// Enlarges or shrinks the screen receipt. The flag lives in AppState: `@State` does not compile on
     /// the Mac mini (Command Line Tools only, no Xcode).
     var toggleScreen: () -> Void = {}
+    /// Lines with speaker names from the call notes (T33); used for receipts when a line has one.
+    var named: [Int: TimelineLine] = [:]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -163,7 +166,7 @@ struct CardView: View {
                 Divider()
                 Text("RECEIPTS").font(.caption2.bold()).foregroundStyle(.secondary)
                 ForEach(card.sources.prefix(4), id: \.self) { id in
-                    if let line = timeline.line(id: id) {
+                    if let line = named[id] ?? timeline.line(id: id) {
                         Text("\(line.clockTime)  \(line.label): \(line.text)")
                             .font(.caption).foregroundStyle(.secondary).lineLimit(2)
                     }
