@@ -32,9 +32,15 @@ SLIDE_GAP = 1.0       # silence between slides in lecture.wav
 VOICES = {
     "Maya": ["Samantha", "Allison", "Ava", "Susan", "Victoria"],
     "Sam": ["Daniel", "Alex", "Tom", "Oliver", "Fred"],
-    "Priya": ["Karen", "Moira", "Tessa", "Veena", "Fiona", "Kathy"],
+    # Tara first: SpeakerKit tells her apart from Samantha; with Karen or Moira it mixed the two (BENCHMARKS.md).
+    "Priya": ["Tara", "Veena", "Karen", "Moira", "Tessa", "Fiona"],
     "Lecturer": ["Daniel", "Alex", "Tom", "Samantha"],
 }
+
+
+NOVELTY = {"Albert", "Bad News", "Bahh", "Bells", "Boing", "Bubbles", "Cellos", "Wobble", "Good News", "Jester",
+           "Junior", "Organ", "Superstar", "Ralph", "Trinoids", "Whisper", "Zarvox", "Fred", "Kathy",
+           "Grandma", "Grandpa", "Eddy", "Flo", "Reed", "Rocko", "Sandy", "Shelley"}
 
 
 def run(cmd):
@@ -48,15 +54,28 @@ def installed_english_voices():
     """Names of installed English voices, from `say -v '?'` ("Samantha    en_US    # Hello...")."""
     names = []
     for line in run(["say", "-v", "?"]).splitlines():
-        m = re.match(r"^(.*?)\s{2,}(en[_-][A-Za-z]+)\s", line)
+        m = re.match(r"^(.+?)\s+(en[_-][A-Za-z]+)\s+#", line)
         if m:
-            names.append(m.group(1).strip())
+            # Newer voices are listed as "Samantha (English (US))"; `say -v` takes the bare name.
+            name = re.sub(r"\s*\(.*$", "", m.group(1)).strip()
+            # Novelty voices (Albert, Bells, Zarvox...) are not people: never fall back to them.
+            if name and name not in NOVELTY and name not in names:
+                names.append(name)
     return names
+
+
+OVERRIDES = {}   # filled from --voice SPEAKER=VOICE
 
 
 def pick_voices(speakers, available):
     chosen, used = {}, set()
     for speaker in speakers:
+        if OVERRIDES.get(speaker) in available:
+            chosen[speaker] = OVERRIDES[speaker]
+            used.add(OVERRIDES[speaker])
+    for speaker in speakers:
+        if speaker in chosen:
+            continue
         options = [v for v in VOICES.get(speaker, []) if v in available and v not in used]
         options += [v for v in available if v not in used]
         if not options:
@@ -162,12 +181,17 @@ def main():
     parser = argparse.ArgumentParser(description="Build the demo audio from demo/ with the system voices.")
     parser.add_argument("--user", default="Yusuf", help="name the call addresses; must match 'Your name' in the app")
     parser.add_argument("--rate", type=int, default=165, help="speaking rate in words per minute")
+    parser.add_argument("--voice", action="append", default=[], metavar="SPEAKER=VOICE",
+                        help="use this system voice for a speaker, e.g. --voice Priya=Tessa (repeatable)")
     args = parser.parse_args()
     if sys.platform != "darwin":
         sys.exit("this needs macOS (`say` and `afconvert`); run it on the Mac mini")
 
     available = installed_english_voices()
     with tempfile.TemporaryDirectory() as tmp:
+        for item in args.voice:
+            speaker, _, voice = item.partition("=")
+            OVERRIDES[speaker.strip()] = voice.strip()
         build_call(args.user, args.rate, available, tmp)
         build_lecture(args.rate, available, tmp)
     print("done. Lecture: open demo/lecture/slides.html   Call: afplay demo/call/call.wav")

@@ -63,7 +63,7 @@ final class AppState: ObservableObject {
     var captureRestarts = 0
     @Published var restartingCapture = false
     var captureWatchdog: Timer?
-    private var transcriber: Transcriber?
+    var transcriber: Transcriber?      // not private: call notes transcribe the recording again per speaker turn (T35)
     private var speaker: Speaker?
     private var speech: SpeechQueue?   // speaks a card sentence by sentence while it streams (T07)
     private let answerer = Answerer()

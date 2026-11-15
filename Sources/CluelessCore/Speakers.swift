@@ -53,6 +53,14 @@ public final class SessionAudio: @unchecked Sendable {
         return pcm.map { Float($0) / 32767 }
     }
 
+    /// Wall-clock time of a position (in seconds) inside `samples()`: the inverse of `offset(of:)`.
+    public func time(at seconds: Double) -> Date? {
+        lock.lock(); defer { lock.unlock() }
+        let index = Int(seconds * Double(Self.sampleRate)) + dropped
+        guard let anchor = anchors.last(where: { $0.index <= index }) ?? anchors.first else { return nil }
+        return anchor.time.addingTimeInterval(Double(index - anchor.index) / Double(Self.sampleRate))
+    }
+
     /// Position of a wall-clock time inside `samples()`, in seconds. Nil if it is before the recording
     /// (or in a part that was dropped).
     public func offset(of time: Date) -> Double? {
@@ -97,8 +105,8 @@ public final class SpeakerLabeler: @unchecked Sendable {
     }
 
     /// Who speaks when. `speakers` fixes the number of speakers when it is known; nil lets SpeakerKit decide.
-    public func turns(_ samples: [Float], speakers: Int? = nil) async throws -> [SpeakerTurn] {
-        let options = PyannoteDiarizationOptions(numberOfSpeakers: speakers)
+    public func turns(_ samples: [Float], speakers: Int? = nil, threshold: Float? = nil) async throws -> [SpeakerTurn] {
+        let options = PyannoteDiarizationOptions(numberOfSpeakers: speakers, clusterDistanceThreshold: threshold)
         let result = try await kit.diarize(audioArray: samples, options: options)
         var out: [SpeakerTurn] = []
         for segment in result.segments {
@@ -142,6 +150,46 @@ public enum Speakers {
         return out
     }
 
+    /// Joins consecutive turns of one speaker (pauses up to `maxGap`) into one stretch of speech and drops
+    /// stretches too short to hold a word.
+    public static func utterances(_ turns: [SpeakerTurn], maxGap: Double = 1.0, minSeconds: Double = 0.4) -> [SpeakerTurn] {
+        var out: [SpeakerTurn] = []
+        for turn in turns.sorted(by: { $0.start < $1.start }) {
+            if let last = out.last, last.speaker == turn.speaker, turn.start - last.end <= maxGap {
+                out[out.count - 1] = SpeakerTurn(speaker: last.speaker, start: last.start, end: max(last.end, turn.end))
+            } else {
+                out.append(turn)
+            }
+        }
+        return out.filter { $0.end - $0.start >= minSeconds }
+    }
+
+    /// The call transcribed again from the recording, one line per stretch of speech by one speaker.
+    /// Live lines are cut at pauses, so one line can hold two people ("Go ahead, Sam. The API changes are
+    /// merged."); these lines cannot. Speakers are "Speaker 1", "Speaker 2", ... in order of first appearance.
+    /// `time` maps seconds in the recording to wall-clock time; ids count up from `firstID`.
+    public static func transcript(from samples: [Float], turns: [SpeakerTurn], transcriber: Transcriber,
+                                  time: (Double) -> Date?, firstID: Int) async -> [TimelineLine] {
+        let rate = Double(SessionAudio.sampleRate)
+        var numbers: [Int: Int] = [:]
+        var out: [TimelineLine] = []
+        for stretch in utterances(turns) {
+            // Whisper works on windows of 30 s: cut longer stretches.
+            var start = stretch.start
+            while start < stretch.end {
+                let end = min(stretch.end, start + 25)
+                let a = max(0, Int((start - 0.15) * rate)), b = min(samples.count, Int((end + 0.15) * rate))
+                if b - a > Int(0.3 * rate), let text = try? await transcriber.transcribe(Array(samples[a..<b])), text.count > 1 {
+                    if numbers[stretch.speaker] == nil { numbers[stretch.speaker] = numbers.count + 1 }
+                    out.append(TimelineLine(id: firstID + out.count, t: time(start) ?? Date(), source: .them,
+                                            speaker: "Speaker \(numbers[stretch.speaker] ?? 0)", text: text))
+                }
+                start = end
+            }
+        }
+        return out
+    }
+
     /// Replaces labels by names: `["Speaker 2": "Priya"]`. Labels without a name stay.
     public static func rename(_ lines: [TimelineLine], names: [String: String]) -> [TimelineLine] {
         var out = lines
@@ -166,7 +214,7 @@ public struct NameResolver: Sendable {
     - Someone is addressed by name and then answers: "Priya, where are we?" followed by Speaker 2 answering means Speaker 2 is Priya.
     - Someone is thanked or answered by name right after they spoke: Speaker 3 speaks, then "Thanks, Sam" means Speaker 3 is Sam.
     - Someone introduces themselves: "this is Sam", "Sam here".
-    A name that is only talked about is not a clue. "You" is the user and never needs a name. If you are not sure about a speaker, use "".
+    A name inside a line is never the name of the person saying that line: it names the person they are talking to. A name that is only talked about is not a clue. "You" is the user and never needs a name. If you are not sure about a speaker, use "".
     Reply with JSON only, one key per label: {"Speaker 1": "Maya", "Speaker 2": ""}
     """
 
@@ -175,13 +223,21 @@ public struct NameResolver: Sendable {
         let spoken = Array(lines.filter { $0.source == .them || $0.source == .me }.suffix(120))
         let labels = Set(spoken.compactMap(\.speaker).filter { $0.hasPrefix("Speaker ") })
         guard !labels.isEmpty else { return [:] }
+        // Who is addressed and who answers settles most names without a model (BENCHMARKS.md: the model
+        // alone got 7/12, handing a name to the person who said it).
+        let coded = NameClues.resolve(spoken, userName: userName)
+        if !coded.isEmpty { return coded }
         let transcript = spoken.map { "\($0.label): \($0.text)" }.joined(separator: "\n")
         var prompt = ""
         if !userName.isEmpty { prompt += "The user, shown as \"You\", is \(userName).\n\n" }
         prompt += "TRANSCRIPT:\n" + transcript + "\n\nLabels to resolve: " + labels.sorted().joined(separator: ", ")
         guard let reply = try? await client.chat(system: Self.system, user: .text(prompt), maxTokens: 120, json: true),
               let obj = JSONRepair.object(reply.0) else { return [:] }
-        return Self.validate(obj, labels: labels, transcript: spoken.map(\.text).joined(separator: "\n"), userName: userName)
+        var names = Self.validate(obj, labels: labels, transcript: spoken.map(\.text).joined(separator: "\n"), userName: userName)
+        // Nobody addresses themselves: drop a name the speaker uses to address someone else.
+        let said = NameClues.addressedBy(spoken, userName: userName)
+        for (label, name) in names where said[label]?.contains(name.lowercased()) == true { names[label] = nil }
+        return names
     }
 
     /// Keeps only answers that can be trusted: a short name that was actually said in the call, is not the
@@ -216,22 +272,158 @@ public enum SessionNotes {
         public var prepareSeconds: Double
     }
 
+    /// With a `transcriber`, a recording of up to `rebuildLimit` seconds is transcribed again one speaker
+    /// turn at a time, which is what makes the speaker of each line (and so the names) reliable. Longer
+    /// recordings, or no transcriber, fall back to labelling the live lines by who talks most during each.
+    public static let rebuildLimit = 900.0
+
     public static func make(lines: [TimelineLine], audio: SessionAudio? = nil, labeler: SpeakerLabeler? = nil,
+                            transcriber: Transcriber? = nil,
                             answerer: Answerer = Answerer(), userName: String = "",
                             onPartial: (@Sendable (Card) -> Void)? = nil) async throws -> Result {
         let t0 = Date()
         var labelled = lines
         var speakerCount = 0
         if let audio, let labeler, audio.seconds > 5 {
-            if let turns = try? await labeler.turns(audio.samples()), !turns.isEmpty {
-                labelled = Speakers.assign(lines, turns: turns, offset: { audio.offset(of: $0) })
+            let samples = audio.samples()
+            if let turns = try? await labeler.turns(samples), !turns.isEmpty {
                 speakerCount = Set(turns.map(\.speaker)).count
+                var rebuilt: [TimelineLine] = []
+                if let transcriber, audio.seconds <= rebuildLimit {
+                    let firstID = (lines.map(\.id).max() ?? 0) + 10_000
+                    rebuilt = await Speakers.transcript(from: samples, turns: turns, transcriber: transcriber,
+                                                        time: { audio.time(at: $0) }, firstID: firstID)
+                }
+                if rebuilt.isEmpty {
+                    labelled = Speakers.assign(lines, turns: turns, offset: { audio.offset(of: $0) })
+                } else {
+                    // The user's own lines (microphone) are kept as they were, in time order with the rest.
+                    labelled = (rebuilt + lines.filter { $0.source == .me }).sorted { $0.t < $1.t }
+                }
             }
         }
         let names = await NameResolver(client: answerer.client).resolve(labelled, userName: userName)
         labelled = Speakers.rename(labelled, names: names)
+        if speakerCount > 0 {
+            // Two clusters with the same name are one person: count people, not clusters.
+            speakerCount = Set(labelled.filter { $0.source == .them }.compactMap(\.speaker)).count
+        }
         let prepareSeconds = Date().timeIntervalSince(t0)
         let card = try await answerer.answer(.notes, lines: labelled, screenText: "", userName: userName, onPartial: onPartial)
         return Result(card: card, lines: labelled, names: names, speakerCount: speakerCount, prepareSeconds: prepareSeconds)
+    }
+}
+
+/// Names worked out in code from who is addressed and who answers. No model call.
+///   "Priya, where are we?"  then someone else speaks      -> that next speaker is Priya
+///   "Thanks, Sam." / "Got it, Maya."                      -> the speaker just before is Sam / Maya
+///   "this is Sam", "Sam here"                             -> the speaker is Sam
+public enum NameClues {
+    /// A sentence opening with one of these is an answer to the previous speaker, not a call on the next.
+    static let answerOpeners: Set<String> = ["thanks", "thank", "got", "perfect", "great", "good", "right", "okay", "ok",
+                                             "yes", "yeah", "yep", "no", "nope", "not", "sure", "understood", "agreed",
+                                             "exactly", "will", "works", "fine", "cool", "sorry"]
+    /// Capitalised words that turn up next to a comma and are not names.
+    static let notNames: Set<String> = ["okay", "ok", "thanks", "thank", "understood", "approved", "agreed", "great", "good",
+        "sure", "yes", "yeah", "yep", "no", "nope", "well", "so", "now", "right", "perfect", "sorry", "please", "hello", "hi",
+        "hey", "morning", "afternoon", "evening", "today", "tomorrow", "yesterday", "tonight", "then", "first", "second",
+        "third", "next", "finally", "also", "actually", "honestly", "look", "listen", "everyone", "everybody", "folks",
+        "team", "guys", "all", "and", "but", "or", "still", "anyway", "alright", "fine", "cool", "exactly", "absolutely",
+        "definitely", "maybe", "however", "meanwhile", "instead", "otherwise", "basically", "obviously", "again", "there",
+        "here", "this", "that", "these", "those", "you", "we", "they", "it", "one", "two", "three", "monday", "tuesday",
+        "wednesday", "thursday", "friday", "saturday", "sunday", "january", "february", "march", "april", "may", "june",
+        "july", "august", "september", "october", "november", "december", "noted", "done", "correct", "true", "wait"]
+
+    struct Address { let name: String; let answering: Bool }
+
+    static func sentences(_ text: String) -> [String] {
+        var out: [String] = []
+        var current = ""
+        for ch in text {
+            current.append(ch)
+            if ch == "." || ch == "!" || ch == "?" {
+                out.append(current); current = ""
+            }
+        }
+        if !current.trimmingCharacters(in: .whitespaces).isEmpty { out.append(current) }
+        return out.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+    }
+
+    private static let addressPattern = try! NSRegularExpression(pattern: "(?:^|,\\s)([A-Z][a-z]{1,14})(?=,|[.!?]?$)")
+    private static let thanksPattern = try! NSRegularExpression(pattern: "^(?:Thanks|Thank you)\\s([A-Z][a-z]{1,14})\\b")
+    private static let selfPattern = try! NSRegularExpression(
+        pattern: "(?:\\b[Tt]his is|\\bI'm|\\bI am|\\b[Mm]y name is)\\s([A-Z][a-z]{1,14})\\b|^([A-Z][a-z]{1,14}) here\\b")
+
+    private static func captures(_ regex: NSRegularExpression, _ text: String) -> [(name: String, atStart: Bool)] {
+        let ns = text as NSString
+        var out: [(name: String, atStart: Bool)] = []
+        for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            for group in 1..<match.numberOfRanges where match.range(at: group).location != NSNotFound {
+                out.append((ns.substring(with: match.range(at: group)), match.range(at: group).location == 0))
+            }
+        }
+        return out
+    }
+
+    /// Names used to address someone in one sentence.
+    static func addresses(in sentence: String, userName: String) -> [Address] {
+        let first = sentence.split(whereSeparator: { !$0.isLetter }).first.map { $0.lowercased() } ?? ""
+        var out: [Address] = []
+        for found in captures(addressPattern, sentence) + captures(thanksPattern, sentence).map({ (name: $0.name, atStart: false) }) {
+            let lower = found.name.lowercased()
+            if notNames.contains(lower) || lower == userName.lowercased() { continue }
+            if out.contains(where: { $0.name.lowercased() == lower }) { continue }
+            out.append(Address(name: found.name, answering: !found.atStart && answerOpeners.contains(first)))
+        }
+        return out
+    }
+
+    /// For every speaker label, the names (lower case) that speaker uses to address someone else.
+    public static func addressedBy(_ lines: [TimelineLine], userName: String) -> [String: Set<String>] {
+        var out: [String: Set<String>] = [:]
+        for line in lines {
+            guard let label = line.speaker else { continue }
+            for sentence in sentences(line.text) {
+                for address in addresses(in: sentence, userName: userName) { out[label, default: []].insert(address.name.lowercased()) }
+            }
+        }
+        return out
+    }
+
+    /// `["Speaker 1": "Maya"]`. Two labels may get the same name: SpeakerKit sometimes splits one person in two.
+    public static func resolve(_ lines: [TimelineLine], userName: String) -> [String: String] {
+        let spoken = lines.filter { $0.source == .them || $0.source == .me }
+        let said = addressedBy(spoken, userName: userName)
+        var votes: [String: [String: Int]] = [:]          // label -> name -> votes
+        func vote(_ label: String?, _ name: String, _ weight: Int = 1) {
+            guard let label, label.hasPrefix("Speaker "), said[label]?.contains(name.lowercased()) != true else { return }
+            votes[label, default: [:]][name, default: 0] += weight
+        }
+        /// The nearest "them" line with another speaker, looking forwards or backwards over at most 3 lines.
+        func neighbour(of i: Int, step: Int) -> String? {
+            var j = i + step, seen = 0
+            while j >= 0, j < spoken.count, seen < 3 {
+                if spoken[j].source == .them, let label = spoken[j].speaker, label != spoken[i].speaker { return label }
+                j += step; seen += 1
+            }
+            return nil
+        }
+        for (i, line) in spoken.enumerated() {
+            for sentence in sentences(line.text) {
+                for found in captures(selfPattern, sentence) where !notNames.contains(found.name.lowercased()) {
+                    if line.source == .them, found.name.lowercased() != userName.lowercased() { vote(line.speaker, found.name, 3) }
+                }
+                for address in addresses(in: sentence, userName: userName) {
+                    vote(neighbour(of: i, step: address.answering ? -1 : 1), address.name)
+                }
+            }
+        }
+        var out: [String: String] = [:]
+        for (label, counts) in votes {
+            let best = counts.max { $0.value < $1.value }
+            guard let best, counts.filter({ $0.value == best.value }).count == 1 else { continue }
+            out[label] = best.key
+        }
+        return out
     }
 }

@@ -106,6 +106,33 @@ func runSelftest() {
                                       transcript: "Thanks, Maya. Yusuf, are you there?", userName: "Yusuf")
     t.check("names: drops the user, unsaid names and duplicates", names == ["Speaker 1": "Maya"], "\(names)")
 
+    // T35: turns of one speaker are joined across short pauses; very short ones are dropped.
+    let joined = Speakers.utterances([
+        SpeakerTurn(speaker: 1, start: 0, end: 2), SpeakerTurn(speaker: 1, start: 2.6, end: 5),
+        SpeakerTurn(speaker: 2, start: 5.2, end: 5.4), SpeakerTurn(speaker: 1, start: 8, end: 9),
+    ])
+    t.check("speakers: utterances joined and filtered",
+            joined == [SpeakerTurn(speaker: 1, start: 0, end: 5), SpeakerTurn(speaker: 1, start: 8, end: 9)], "\(joined)")
+
+    // T35: names from who is addressed and who answers, no model.
+    let talk = Timeline()
+    let said: [(String, String)] = [
+        ("Speaker 1", "Okay, let's get started. Sam, can you start with the backend?"),
+        ("Speaker 2", "Sure. The export job is fixed."),
+        ("Speaker 1", "Thanks, Sam. Priya, how is the onboarding flow?"),
+        ("Speaker 3", "The design is final. Yusuf, can you write the copy?"),
+        ("Speaker 4", "Quick note from support: ticket volume doubled on Thursday, honestly."),
+        ("Speaker 2", "That matches what I see in the logs, Maya."),
+        ("Speaker 1", "Okay, then we need to look at that email."),
+        ("Speaker 5", "Got it, Maya."),
+    ]
+    for (i, line) in said.enumerated() { talk.append(.them, line.1, speaker: line.0, at: base.addingTimeInterval(Double(i) * 5)) }
+    let clues = NameClues.resolve(talk.all, userName: "Yusuf")
+    t.check("names: from address and answer", clues == ["Speaker 1": "Maya", "Speaker 2": "Sam", "Speaker 3": "Priya"], "\(clues)")
+    let own = NameClues.addressedBy(talk.all, userName: "Yusuf")
+    t.check("names: nobody is given a name they use for someone else",
+            own["Speaker 2"] == ["maya"] && own["Speaker 1"] == ["sam", "priya"], "\(own)")
+
     // T26: every prompt file is found and matches the copy built into the code.
     for line in Prompts.report() {
         t.check("prompt " + line, line.hasSuffix("same as built-in"))
