@@ -136,7 +136,11 @@ public struct AudioChunker {
 /// Argmax TTSKit, loaded once from the local models folder.
 public final class Speaker: @unchecked Sendable {
     private let tts: TTSKit
+    private let lock = NSLock()
     private var current: Task<Void, Never>?
+    /// The last "stop the audio" that is still on its way. The next sentence waits for it, so a stop asked
+    /// for just before can never cut off what is spoken after it.
+    private var stopping: Task<Void, Never>?
     public private(set) var loadSeconds: Double = 0
 
     public init() async throws {
@@ -153,17 +157,54 @@ public final class Speaker: @unchecked Sendable {
 
     /// Speak, cancelling anything already being spoken.
     public func say(_ text: String) {
-        current?.cancel()
-        let tts = self.tts
-        current = Task { _ = try? await tts.play(text: text) }
+        stop()
+        let task = Task { [self] in _ = try? await self.sayAndWait(text) }
+        setCurrent(task)
     }
 
-    public func stop() { current?.cancel() }
+    /// Stop at once: nothing more is generated, and what is already playing is cut off. Also stops a
+    /// `sayAndWait` in progress, whoever called it (the app's speech queue does).
+    public func stop() {
+        takeCurrent()?.cancel()
+        stopOutput()
+    }
 
-    /// For benchmarks: synthesize and play, returning seconds until done.
+    /// Synthesize and play, returning seconds until done. Cancel the calling task to stop it: generation
+    /// ends and the audio is cut off.
     public func sayAndWait(_ text: String) async throws -> Double {
         let t0 = Date()
-        _ = try await tts.play(text: text)
+        await pendingStop()?.value
+        try Task.checkCancellation()
+        let tts = self.tts
+        _ = try await withTaskCancellationHandler {
+            try await tts.play(text: text)
+        } onCancel: { [self] in
+            self.stopOutput()
+        }
         return Date().timeIntervalSince(t0)
+    }
+
+    /// Cancelling the task that called `tts.play` only ends generation. TTSKit hands audio to its player
+    /// ahead of time, and that audio went on playing to its end: after Option+S, and into the microphone
+    /// while a spoken question was being recorded. So the player is stopped as well, the way TTSKit's own
+    /// example app does it (cancel, then `stopPlayback(waitForCompletion: false)`).
+    private func stopOutput() {
+        let output = tts.audioOutput
+        lock.lock(); defer { lock.unlock() }
+        let previous = stopping
+        stopping = Task {
+            await previous?.value
+            await output.stopPlayback(waitForCompletion: false)
+        }
+    }
+
+    // The lock is only taken in these plain functions, never across an `await`.
+    private func pendingStop() -> Task<Void, Never>? { lock.lock(); defer { lock.unlock() }; return stopping }
+    private func setCurrent(_ task: Task<Void, Never>) { lock.lock(); defer { lock.unlock() }; current = task }
+    private func takeCurrent() -> Task<Void, Never>? {
+        lock.lock(); defer { lock.unlock() }
+        let task = current
+        current = nil
+        return task
     }
 }

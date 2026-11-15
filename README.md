@@ -91,7 +91,7 @@ build takes a few minutes while Core ML compiles the Whisper model.
 
 - **⌥Space** ask a question about the screen or what was said
 - **⌥C** catch me up
-- **⌥S** stop speaking (after the sentence being spoken)
+- **⌥S** stop speaking (cuts the voice off at once)
 - **⌥V** ask a question out loud (study mode); it stops by itself when you pause
 
 ## Try it with the demo material
