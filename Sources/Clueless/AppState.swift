@@ -51,6 +51,11 @@ final class AppState: ObservableObject {
     /// The screen the current card was answered from; shown under the card's receipts (Receipts.swift).
     @Published var screenReceipt: ScreenReceipt?
     let capture = Capture()
+    // Call notes (CallNotes.swift, T33): the other side's audio is kept so the speakers can be labelled.
+    let sessionAudio = SessionAudio()
+    var speakerLabeler: SpeakerLabeler?
+    /// Lines with the speaker names found by the last call notes, by line number. Receipts show these.
+    @Published var namedLines: [Int: TimelineLine] = [:]
     // Capture supervision state (used by the extension in CaptureRestart.swift).
     var wantRecording = false          // the user wants capture on; false after pause
     var captureLive = false            // a real SCStream is running (not the file test hook)
@@ -82,6 +87,8 @@ final class AppState: ObservableObject {
         let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
         timeline = Timeline(jsonl: Paths.sessions.appendingPathComponent("\(stamp).jsonl"))
         snapshotDir = Paths.sessions.appendingPathComponent("\(stamp)-screens")
+        // Test hook: CLUELESS_TEST_MODE=call starts in call mode, so call mode can be checked with nobody at the Mac.
+        if ProcessInfo.processInfo.environment["CLUELESS_TEST_MODE"] == "call" { mode = .call }
         pathMonitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor in self?.hud.online = path.status == .satisfied }
         }
@@ -119,6 +126,8 @@ final class AppState: ObservableObject {
             await refreshHUD()
             status = "Ready"
             await start()
+            // SpeakerKit is only needed for call notes: load it once the app is already listening.
+            Task { await loadSpeakerLabeler() }
             // Test hook: CLUELESS_TEST_VOICE=<seconds> starts a voice question that long after launch, so the
             // microphone path can be checked from the log without anyone pressing the hotkey.
             if let delay = Double(ProcessInfo.processInfo.environment["CLUELESS_TEST_VOICE"] ?? "") {
@@ -159,6 +168,15 @@ final class AppState: ObservableObject {
                     await MainActor.run { self?.question = q; self?.ask() }
                     try? await Task.sleep(nanoseconds: 15_000_000_000)
                     await MainActor.run { self?.catchUp() }
+                }
+                // Test hook: CLUELESS_TEST_NOTES asks for session notes once the file has played and no
+                // card is being written (with CLUELESS_TEST_MODE=call these are the call notes, T33).
+                if ProcessInfo.processInfo.environment["CLUELESS_TEST_NOTES"] != nil {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    while await MainActor.run(body: { self?.thinking ?? false }) {
+                        try? await Task.sleep(nanoseconds: 500_000_000)
+                    }
+                    await MainActor.run { self?.notes() }
                 }
             }
             return
@@ -210,6 +228,8 @@ final class AppState: ObservableObject {
         work.async { [weak self] in
             guard let self else { return }
             Task { @MainActor in
+                // In a call, keep the other side's audio for the speaker labels in the notes (T33).
+                if source == .system, self.mode == .call { self.sessionAudio.append(samples) }
                 guard var chunker = self.chunkers[source] else { return }
                 let chunk = chunker.feed(samples)
                 self.chunkers[source] = chunker
@@ -373,8 +393,7 @@ final class AppState: ObservableObject {
         let lines = timeline.recent(seconds: window, maxLines: maxLines, step: step)
             .filter { $0.source == .them || $0.source == .me }
         do {
-            let result = try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
-                                                   question: question, userName: userName) { [weak self] partial in
+            let onPartial: @Sendable (Card) -> Void = { [weak self] partial in
                 // Show the card growing as tokens arrive, and start speaking as soon as a sentence is whole.
                 Task { @MainActor in
                     guard let self, self.thinking else { return }
@@ -384,6 +403,11 @@ final class AppState: ObservableObject {
                     }
                 }
             }
+            // In a call the notes are by speaker, with names: speakers are labelled and named first (T33).
+            let result = task == .notes && mode == .call
+                ? try await callNotes(lines, answerer: answerer, onPartial: onPartial)
+                : try await answerer.answer(task, lines: lines, screenText: screenText, image: image,
+                                            question: question, userName: userName, onPartial: onPartial)
             card = result
             Log.write("[card \(task.rawValue) \(String(format: "%.2f", result.stats.seconds))s, first token \(String(format: "%.2f", result.stats.firstTokenSeconds))s, ocr \(screenText.count) chars, image \(image?.count ?? 0) bytes] \(result.raw)")
             hud.llm = result.stats.seconds; hud.tps = result.stats.tokensPerSecond
