@@ -209,6 +209,64 @@ but never reached the model: a question sends at most 45 timeline lines, the lec
 time at the current speed) or join consecutive chunks from one speaker into one line. This question is on the
 demo run sheet, so it matters. The other four audio questions and the live browser lecture were not run.
 
+## 8. Third round, Saturday night (fixes for what section 7 found)
+
+Measured Sat Nov 14, 8:40 to 9:00 pm on the Mac mini. Gate after all of it:
+`PASS aziz/lecture-questions @ 44a6642: build ok, questions 10/10, catch-up 3/3, watcher 16/16`, self-test 24/24.
+
+### Call notes with real speakers and names (T35)
+
+| | Section 7 | Now |
+|---|---|---|
+| `clueless-bench names` | 7/12, one model call | 12/12, 0.00 s, no model call |
+| Notes from `demo/call/call.wav` | 6 to 7 speakers, no names | Maya, Sam and Priya on 18 of 20 lines |
+| Time before the notes start | 2.4 s | 8.1 s |
+| Notes card | 8.6 s | 4.6 s |
+
+What changed: the recording is transcribed again one speaker turn at a time (a live line could hold two people),
+and names come from code: who is addressed and who answers. In the app the same call gives
+`names: Speaker 1 = Maya, Speaker 2 = Sam, Speaker 3 = Priya`, 19 of 19 lines labelled, and notes that read
+"Maya decided to cut the tablet layout... Sam will fix the push notification service by Wednesday."
+Two short lines after the 8 s pauses still land in a fourth cluster ("Speaker 4").
+
+The demo call's voices matter to SpeakerKit. At its default clustering setting:
+
+| Voices (Maya, Sam, Priya) | Speakers found | Notes |
+|---|---|---|
+| Albert, Daniel, Karen (the script's old pick; Albert is a novelty voice) | 6 | Maya split in three, Priya in two |
+| Samantha, Daniel, Karen | 4 | Maya and Priya mixed |
+| Samantha, Daniel, Moira | 4 | |
+| Samantha, Daniel, Tessa | 5 | |
+| **Samantha, Daniel, Tara** | 4 | the three people are separated turn by turn; one small extra cluster |
+
+Raising the clustering threshold is not a fix: for one voice set 1.0 gave exactly 3 and 1.1 collapsed everyone
+into one speaker; for another it changed nothing. Real voices have not been tried.
+
+### Catch-up cards from what was said (T34, `clueless-bench grounding`)
+
+| Case, three runs each | Before | After |
+|---|---|---|
+| Nothing said, terminal on screen | 0/3 | 3/3 (no model call) |
+| Lecture playing, terminal on screen | 2/3 | 3/3 |
+| Question to the user in a call, terminal on screen | not comparable | 3/3 |
+| Lecture playing, matching slide on screen | 3/3 | 3/3 |
+
+The screen text in a catch-up is now labelled as background and cut to 600 characters; average card 1.40 s
+(1.65 s before). The third case has no fair "before": the first version of the test banned a word the call uses.
+
+### Lecture audio questions (T04, T10, `clueless-bench lecture`)
+
+162 s demo lecture, 44 lines, all sent with each question: **4/5**, 1.3 s average. Office hours, Cauchy 1847,
+"divide the learning rate by 10" and "start at 0.01" are right. The miss, "What does the midterm cover", answers
+"lectures through 8": a forced 8 s cut fell inside "it covers lectures one through eight" and Whisper lost
+"s lectures one" across the two chunks. The word-safe cut (T19) does not prevent it.
+
+### Other
+
+- TTSKit loads with `download: false` from `models/argmax` (25 s first load in a new binary) and speaks.
+- Closing the camera test window: before the fix the app quit; after it the app keeps running (checked with
+  the `CLUELESS_CAMERA_TEST_CLOSE` hook, which closes the window the way the red button does).
+
 ## Known issues
 
 - First launch of a new build spends minutes compiling the Whisper Core ML model (6 min in the app, 2 min in the
