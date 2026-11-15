@@ -277,7 +277,12 @@ public enum SessionNotes {
     /// recordings, or no transcriber, fall back to labelling the live lines by who talks most during each.
     public static let rebuildLimit = 900.0
 
-    public static func make(lines: [TimelineLine], audio: SessionAudio? = nil, labeler: SpeakerLabeler? = nil,
+    /// `ownLines`: everything the user said in the call (the microphone lines), when the caller has more of
+    /// them than are in `lines`. The app caps `lines` at 200, but the transcript rebuilt from the recording
+    /// covers the whole call, so without these the notes had everyone else's earlier discussion and not what
+    /// the user said or promised back then.
+    public static func make(lines: [TimelineLine], ownLines: [TimelineLine]? = nil,
+                            audio: SessionAudio? = nil, labeler: SpeakerLabeler? = nil,
                             transcriber: Transcriber? = nil,
                             answerer: Answerer = Answerer(), userName: String = "",
                             onPartial: (@Sendable (Card) -> Void)? = nil) async throws -> Result {
@@ -297,8 +302,7 @@ public enum SessionNotes {
                 if rebuilt.isEmpty {
                     labelled = Speakers.assign(lines, turns: turns, offset: { audio.offset(of: $0) })
                 } else {
-                    // The user's own lines (microphone) are kept as they were, in time order with the rest.
-                    labelled = (rebuilt + lines.filter { $0.source == .me }).sorted { $0.t < $1.t }
+                    labelled = merge(rebuilt: rebuilt, lines: lines, ownLines: ownLines)
                 }
             }
         }
@@ -311,6 +315,13 @@ public enum SessionNotes {
         let prepareSeconds = Date().timeIntervalSince(t0)
         let card = try await answerer.answer(.notes, lines: labelled, screenText: "", userName: userName, onPartial: onPartial)
         return Result(card: card, lines: labelled, names: names, speakerCount: speakerCount, prepareSeconds: prepareSeconds)
+    }
+
+    /// The other side as rebuilt from the recording, plus the user's own lines (microphone) as they were,
+    /// in time order. The user's lines come from `ownLines` when given (the whole call), otherwise from `lines`.
+    public static func merge(rebuilt: [TimelineLine], lines: [TimelineLine], ownLines: [TimelineLine]?) -> [TimelineLine] {
+        let mine = (ownLines ?? lines).filter { $0.source == .me }
+        return (rebuilt + mine).sorted { $0.t < $1.t }
     }
 }
 

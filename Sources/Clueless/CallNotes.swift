@@ -22,7 +22,11 @@ extension AppState {
     func callNotes(_ lines: [TimelineLine], answerer: Answerer,
                    onPartial: @escaping @Sendable (Card) -> Void) async throws -> Card {
         Log.write("[notes] call notes: \(lines.count) lines, \(Int(sessionAudio.seconds)) s of recorded audio, SpeakerKit \(speakerLabeler == nil ? "not loaded" : "loaded")")
-        let result = try await SessionNotes.make(lines: lines, audio: sessionAudio, labeler: speakerLabeler, transcriber: transcriber,
+        // `lines` is capped (200). The other side is rebuilt from the whole recording, so give the notes
+        // everything the user said in the call as well, or their earlier lines are the only ones missing.
+        let own = timeline.all.filter { $0.source == .me && $0.t >= callStartedAt }
+        Log.write("[notes] your lines: \(own.count) in the whole call, \(lines.filter { $0.source == .me }.count) of them in the capped list")
+        let result = try await SessionNotes.make(lines: lines, ownLines: own, audio: sessionAudio, labeler: speakerLabeler, transcriber: transcriber,
                                                  answerer: answerer, userName: userName, onPartial: onPartial)
         // Receipts look lines up by number: show them with the speaker names from now on.
         for line in result.lines where line.speaker != nil { namedLines[line.id] = line }
