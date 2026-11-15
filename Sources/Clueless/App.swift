@@ -37,7 +37,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = true
         // Deliberately NOT hidden from screen sharing: sharingType stays at its default.
-        panel.contentView = NSHostingView(rootView: OverlayView(state: state))
+        panel.contentView = NSHostingView(rootView: OverlayView(state: state, onHeight: { [weak self] height in
+            // Not during the layout pass that measured it.
+            DispatchQueue.main.async { self?.fitPanel(toContentHeight: height) }
+        }))
         if let screen = NSScreen.main {
             let f = screen.visibleFrame
             panel.setFrameOrigin(NSPoint(x: f.maxX - 440, y: f.maxY - 460))
@@ -56,6 +59,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             HotKey(keyCode: UInt32(kVK_ANSI_S), modifiers: UInt32(optionKey)) { [weak self] in self?.state.stopSpeaking() },
             HotKey(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(optionKey)) { [weak self] in self?.state.toggleVoiceQuestion() },
         ]
+    }
+
+    /// Resize the panel to its content, keeping the top edge where it is so it grows downwards.
+    private func fitPanel(toContentHeight height: CGFloat) {
+        guard let panel, height > 50 else { return }
+        let visible = (panel.screen ?? NSScreen.main)?.visibleFrame ?? .zero
+        // The content starts below the transparent title bar.
+        let titleBar = panel.contentView?.safeAreaInsets.top ?? 28
+        var wanted = height + titleBar
+        if visible.height > 220 { wanted = min(wanted, visible.height - 20) }
+        var frame = panel.frame
+        guard abs(frame.height - wanted) > 0.5 else { return }
+        frame.origin.y = frame.maxY - wanted
+        frame.size.height = wanted
+        if visible.height > 0, frame.minY < visible.minY { frame.origin.y = visible.minY }   // stay on screen
+        panel.setFrame(frame, display: true)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
