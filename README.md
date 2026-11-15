@@ -23,7 +23,9 @@ Everything runs on-device with Wi-Fi off:
   and what is on the screen.
 - **Receipts.** Every card lists the transcript lines it used, with speaker and time, and the screenshot it read.
 - **Spoken answers.** The card streams in and is read aloud from its first complete sentence. ⌥S stops it.
-- **Call mode.** The microphone is "You", system audio is everyone else. Session notes at the end.
+- **Call mode.** The microphone is "You", system audio is everyone else. At the end, session notes by speaker:
+  SpeakerKit separates the voices and the names are worked out from the conversation ("Go ahead, Sam",
+  "Thanks, Priya"), so nobody types them in.
 - **It looks after itself.** The app starts the Bonsai servers if they are not running, restarts them if the
   answerer dies, and restarts capture if the stream stops. A row in the panel says so when something is down.
 - **HUD.** The bottom of the panel shows network on or off, each Bonsai server with its memory, and the time each
@@ -31,16 +33,16 @@ Everything runs on-device with Wi-Fi off:
 
 ## Status
 
-Sat Nov 14, 8 pm. "Checked" means the build and the benchmark gate passed on the test machine and a scripted run
-showed the behaviour in the log. "Not yet tried by a person" means nobody has sat in front of it yet.
+Sun Nov 15, 2 am. "Checked" means the build and the benchmark gate passed on the test machine and a scripted run
+showed the behaviour in the log. "Seen live" means a person sat in front of it.
 
 | Milestone | State |
 |---|---|
-| M0 smoke tests | Done, except the run with Wi-Fi off. A socket check showed only 127.0.0.1 connections |
-| M1 study mode | Live system-audio transcription, screen questions, streaming cards and early speech are checked. Hotkeys and listening to the spoken answers: not yet tried by a person |
-| M2 catch-up | Hotkey catch-up, the look-away trigger (simulated absence) and screenshot receipts are checked. A real head turn at the webcam: not yet tried by a person |
-| M3 call mode | Microphone = You and the watcher trigger are wired; speaker labels and names are being tested. Not yet tried live |
-| Reliability | Server auto-start and restart after a kill are checked. Capture restart has not fired in a test yet |
+| M0 smoke tests | Done. The whole app was run with Wi-Fi off (the test machine's only network connection) and worked; a socket check with everything running showed only 127.0.0.1 connections |
+| M1 study mode | Checked on our own demo material: paper questions 11/11, lecture slide questions 7/7, questions about what the lecturer said 5/5. Live transcription and spoken answers seen live. Hotkeys and a typed question: not yet tried by a person |
+| M2 catch-up | The look-away trigger was seen live: four look-aways of 6 to 9 s each gave a card (first word after 0.8 to 1.0 s), 31 short glances gave none, no crash in 2.5 hours. Screenshot receipts are checked |
+| M3 call mode | Checked on the demo call played into the app: the name trigger fires, waits for the end of the question and puts it in the card; the notes name all three speakers. Not yet tried live with a microphone |
+| Reliability | Server auto-start and restart after a kill are checked. A 22-minute session played into the app: no crash, memory flat (app about 0.35 GB, 9B 1.2 GB, 4B 0.3 GB). Capture restart has not fired in a test yet |
 
 Measurements and the method comparisons behind each default are in [BENCHMARKS.md](BENCHMARKS.md).
 The full plan is in [BRIEF.md](BRIEF.md).
@@ -87,7 +89,7 @@ build takes a few minutes while Core ML compiles the Whisper model.
 
 - **⌥Space** ask a question about the screen or what was said
 - **⌥C** catch me up
-- **⌥S** stop speaking
+- **⌥S** stop speaking (after the sentence being spoken)
 - **⌥V** ask a question out loud (study mode); it stops by itself when you pause
 
 ## Testing a branch (Mac mini only)
@@ -118,7 +120,8 @@ Prompts and test cases are data files, so they can be edited on any machine with
 ```
 Sources/CluelessCore   timeline, Bonsai client, watcher, answerer, chunked transcription, OCR, speech
 Sources/Clueless       the app: ScreenCaptureKit capture and its restart, floating panel, hotkeys, HUD,
-                       webcam presence, server supervision, speech queue, voice questions, receipts
+                       webcam presence, server supervision, speech queue, voice questions, receipts,
+                       call notes, a camera test window (testing only)
 Sources/clueless-bench headless benchmarks (no permissions needed)
 scripts/               servers.sh, make_app.sh, check.sh, make_demo_assets.py, smoke_bonsai.py
 demo/                  demo assets generated locally: a multi-speaker call, a narrated lecture, a PDF
