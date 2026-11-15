@@ -267,7 +267,7 @@ do {
     case "watch": try await benchWatch(port: args.count > 1 ? Int(args[1])! : 8082)
     case "cache": try await benchCache(port: args.count > 1 ? Int(args[1])! : 8080)
     case "names": try await benchNames(port: args.count > 1 ? Int(args[1])! : 8080)
-    case "speakers": try await benchSpeakers(args[1], args.count > 2 ? Int(args[2]) : nil)
+    case "speakers": try await benchSpeakers(args[1], args.count > 2 ? Int(args[2]) : nil, args.count > 3 ? Float(args[3]) : nil)
     case "notes": try await benchNotes(port: args.count > 1 ? Int(args[1])! : 8080, wav: args.count > 2 ? args[2] : nil)
     case "selftest": runSelftest()
     case "tts":

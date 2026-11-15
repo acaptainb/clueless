@@ -22,7 +22,7 @@ extension AppState {
     func callNotes(_ lines: [TimelineLine], answerer: Answerer,
                    onPartial: @escaping @Sendable (Card) -> Void) async throws -> Card {
         Log.write("[notes] call notes: \(lines.count) lines, \(Int(sessionAudio.seconds)) s of recorded audio, SpeakerKit \(speakerLabeler == nil ? "not loaded" : "loaded")")
-        let result = try await SessionNotes.make(lines: lines, audio: sessionAudio, labeler: speakerLabeler,
+        let result = try await SessionNotes.make(lines: lines, audio: sessionAudio, labeler: speakerLabeler, transcriber: transcriber,
                                                  answerer: answerer, userName: userName, onPartial: onPartial)
         // Receipts look lines up by number: show them with the speaker names from now on.
         for line in result.lines where line.speaker != nil { namedLines[line.id] = line }

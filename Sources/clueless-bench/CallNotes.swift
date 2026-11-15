@@ -57,13 +57,13 @@ func benchNames(port: Int) async throws {
     print("== names: \(total)/\(labelOf.count * 3) over 3 runs")
 }
 
-func benchSpeakers(_ wav: String, _ count: Int?) async throws {
+func benchSpeakers(_ wav: String, _ count: Int?, _ threshold: Float? = nil) async throws {
     let samples = try AudioFile.load16k(wav)
     print("SpeakerKit models: \(SpeakerLabeler.modelFolder ?? "NOT FOUND on disk (see README setup, step 3)")")
     let labeler = try await SpeakerLabeler()
     print("SpeakerKit load: \(f(labeler.loadSeconds))s, audio: \(f(Double(samples.count) / 16000, 1))s")
     let t0 = Date()
-    let turns = try await labeler.turns(samples, speakers: count)
+    let turns = try await labeler.turns(samples, speakers: count, threshold: threshold)
     let seconds = Date().timeIntervalSince(t0)
     var talk: [Int: Double] = [:]
     for turn in turns { talk[turn.speaker, default: 0] += turn.end - turn.start }
@@ -79,10 +79,13 @@ func benchNotes(port: Int, wav: String?) async throws {
     var lines: [TimelineLine] = []
     var audio: SessionAudio? = nil
     var labeler: SpeakerLabeler? = nil
+    var whisper: Transcriber? = nil
     var user = ""
     if let wav {
         let samples = try AudioFile.load16k(wav)
         let transcriber = try await Transcriber()
+        whisper = transcriber
+        user = ProcessInfo.processInfo.environment["CLUELESS_USER"] ?? "Yusuf"
         let recording = SessionAudio()
         let tl = Timeline()
         var chunker = AudioChunker(method: .silence(minSeconds: 2, maxSeconds: 8))
@@ -113,9 +116,9 @@ func benchNotes(port: Int, wav: String?) async throws {
         lines = anonymised(data).timeline.all
         user = data.user
     }
-    let result = try await SessionNotes.make(lines: lines, audio: audio, labeler: labeler, answerer: answerer, userName: user)
+    let result = try await SessionNotes.make(lines: lines, audio: audio, labeler: labeler, transcriber: whisper, answerer: answerer, userName: user)
     print("== notes: \(result.speakerCount) speakers heard, names \(result.names), prepare \(f(result.prepareSeconds))s, "
           + "notes \(f(result.card.stats.seconds))s, sources \(result.card.sources)")
-    for line in result.lines.prefix(12) { print("   \(line.rendered)") }
+    for line in result.lines.prefix(40) { print("   \(line.rendered)") }
     print(result.card.answer)
 }
