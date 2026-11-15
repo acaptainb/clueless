@@ -3,8 +3,9 @@ import CluelessCore
 
 // Test hook, for the Mac mini only (T45). Three of the fixes in T41 could only be judged by a person at the
 // keyboard: a question typed while a card is being written, Option+S during a spoken card, and play pressed
-// twice. `CLUELESS_TEST_T41=<seconds after launch>` does those three things by itself and writes what
-// happened to the log as `[test41]` lines, so they can be checked with nobody there.
+// twice. `CLUELESS_TEST_T41=<seconds after launch>` does those three things by itself, then makes capture
+// restart after a simulated stream error (T17), and writes what happened to the log as `[test41]` lines,
+// so they can be checked with nobody there.
 // It needs something to listen to: the lecture through `CLUELESS_AUDIO_FILE`, or through the speakers.
 extension AppState {
     func runT41TestIfAsked() {
@@ -89,6 +90,22 @@ extension AppState {
             let after = timeline.last(1).first?.id ?? 0
             Log.write("[test41] 3: \(started && after == before ? "PASS" : "FAIL"): recording after the double press: \(started); new timeline lines during 12 s of pause: \(after - before) (must be 0; more means a second stream is still running). Also check the lines before this for doubled transcript text")
             await start()
+
+            // 4. Capture restarts itself after a stream error (T17; it has never fired in a test). The app is
+            //    told the stream failed, the way ScreenCaptureKit reports it; the restart that follows is real.
+            await t41Pause(8)
+            let lastThem = { [timeline] in timeline.last(60).filter { $0.source == .them }.last?.id ?? 0 }
+            let heardBefore = lastThem()
+            Log.write("[test41] 4: reporting a stream error to the app")
+            captureStopped(NSError(domain: "CluelessTest", code: 1,
+                                   userInfo: [NSLocalizedDescriptionKey: "test: simulated stream failure"]))
+            let t4 = Date()
+            while !recording, Date().timeIntervalSince(t4) < 40 { await t41Pause(0.2) }
+            let back = recording
+            let gap = Date().timeIntervalSince(t4)
+            await t41Pause(25)                 // with audio playing, new lines must arrive from the new stream
+            let heard = lastThem() - heardBefore
+            Log.write("[test41] 4: \(back && heard > 0 ? "PASS" : "FAIL"): recording again: \(back), after \(String(format: "%.1f", gap)) s; transcript lines from the new stream in the next 25 s: \(heard) (must be more than 0). Expect \"[capture] restarted on try 1\" above")
         }
         Log.write("[test41] done")
     }
