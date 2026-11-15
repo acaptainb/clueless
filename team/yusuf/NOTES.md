@@ -5,13 +5,13 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Working on now
 
-Session #1, Sun 1:40 am: T38 is merged (PR #34). T39 (`yusuf/small-fixes`, PR #35) and T41 (`yusuf/review-fixes`, PR #37, stacked on it) are pushed and queued. Everything earlier is merged (T05, T06, T07, T16, T17, T20, T25, T29, T30, T32, T33).
+Session #1, Sun 1:45 am: nothing claimed, nothing open. T38, T39, T41 and the README update are merged (PRs #34 to #37).
 
 ## Pushed, waiting for a Mac mini test
 
-- `yusuf/review-fixes` (T41) contains `yusuf/small-fixes` (T39). Merge #35 first, then #37; or only #37 and close #35. The riskiest change is the microphone gate in call mode (`micHearsSpeakers` in `AppState.swift`): if "You" lines never appear live, `CLUELESS_MIC_GATE=0`.
+- Nothing. `main` after the last merges is compile-checked on the MacBook only: one `check.sh main` is asked for in the work log.
+- Everything left needs a person at the Mac mini: `team/yusuf/SHIP.md`. If "You" lines never appear in call mode on the loudspeakers, launch with `CLUELESS_MIC_GATE=0`.
 - Option+S stops after the sentence being spoken, not mid-word (core change suggested to Aziz in the work log, not made).
-- Still needing a person (T28 and T01, T02, T11, T12): hotkeys, a typed and a spoken question, the server warning row, capture restart, speech order by ear, long-card scroll, receipts click. Real look-aways work (in-person log, Sat 10:45 pm: 4 of 4 cards, 31 short glances ignored).
 
 ## Ideas and things to remember
 
