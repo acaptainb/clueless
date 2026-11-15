@@ -17,15 +17,20 @@ Everything runs on-device with Wi-Fi off:
 ## What it does
 
 - **Catch me up.** Look away from the screen and back, press ⌥C, or get called on by name in a call: a card says
-  what you were asked, what you missed and what you could say. The look-away trigger uses the webcam with Apple
-  Vision face detection; an eye icon shows whenever the webcam is in use.
+  what you were asked, what you missed and what you could say (the Reply button hides that last box). The
+  look-away trigger uses the webcam with Apple Vision face detection: a turned head or eyes pointed off the
+  screen for about 4.5 s counts as away, short glances do not. An eye icon shows whenever the webcam is in use,
+  and the "Clueless camera" window shows what the camera sees and decides. Frames are analysed in memory and
+  never saved. When your name comes before the question, the card waits for the speaker to finish.
 - **Ask.** Type a question (⌥Space) or ask it out loud (⌥V). The answer uses the last few minutes of transcript
   and what is on the screen.
 - **Receipts.** Every card lists the transcript lines it used, with speaker and time, and the screenshot it read.
   The transcript and those screenshots are kept on this Mac under `sessions/` (ignored by git, never sent anywhere).
   A screenshot shows whatever was on screen, passwords included: delete the folder when you no longer need it.
-- **Spoken answers.** The card streams in and is read aloud from its first complete sentence. ⌥S stops it.
-- **Call mode.** The microphone is "You", system audio is everyone else. At the end, session notes by speaker:
+- **Spoken answers.** The card streams in and is read aloud from its first complete sentence. ⌥S stops it; the
+  Speaking / Silent button next to "Catch me up" turns the voice on or off.
+- **Call mode.** The microphone is "You", system audio is everyone else (microphone audio is dropped while the
+  loudspeakers or Clueless itself are talking, so the call is not transcribed twice). At the end, session notes by speaker:
   SpeakerKit separates the voices and the names are worked out from the conversation ("Go ahead, Sam",
   "Thanks, Priya"), so nobody types them in.
 - **It looks after itself.** The app starts the Bonsai servers if they are not running, restarts them if the
@@ -35,16 +40,20 @@ Everything runs on-device with Wi-Fi off:
 
 ## Status
 
-Sun Nov 15, 2 am. "Checked" means the build and the benchmark gate passed on the test machine and a scripted run
-showed the behaviour in the log. "Seen live" means a person sat in front of it.
+Sun Nov 15, noon (submission). "Checked" means the build and the benchmark gate passed on the test machine and a
+scripted run showed the behaviour in the log. "Seen live" means a person sat in front of it.
 
 | Milestone | State |
 |---|---|
 | M0 smoke tests | Done. The whole app was run with Wi-Fi off (the test machine's only network connection) and worked; a socket check with everything running showed only 127.0.0.1 connections |
-| M1 study mode | Checked on our own demo material: paper questions 11/11, lecture slide questions 7/7, questions about what the lecturer said 5/5. Live transcription and spoken answers seen live. Hotkeys and a typed question: not yet tried by a person |
-| M2 catch-up | The look-away trigger was seen live: four look-aways of 6 to 9 s each gave a card (first word after 0.8 to 1.0 s), 31 short glances gave none, no crash in 2.5 hours. Screenshot receipts are checked |
-| M3 call mode | Checked on the demo call played into the app: the name trigger fires, waits for the end of the question and puts it in the card; the notes name all three speakers. Not yet tried live with a microphone |
-| Reliability | Server auto-start and restart after a kill are checked. A 22-minute session played into the app: no crash, memory flat (app about 0.35 GB, 9B 1.2 GB, 4B 0.3 GB). Capture restart has not fired in a test yet |
+| M1 study mode | Checked on our own demo material: paper questions 11/11, lecture slide questions 7/7, questions about what the lecturer said 5/5. Live transcription, spoken answers and the panel's buttons seen live. A question typed while a card is being written is answered afterwards (checked with a test hook). All four hotkeys register with macOS |
+| M2 catch-up | The look-away trigger was seen live on Saturday night: four look-aways of 6 to 9 s each gave a card (first word after 0.8 to 1.0 s), 31 short glances gave none. Since then eye direction was added and the delay raised from 3 s to 4.5 s; that version has no written live result, and in Sunday's in-person try no look-away card was seen (cause not found). ⌥C and screenshot receipts are checked |
+| M3 call mode | Checked on the demo call played into the app: the name trigger fires, waits for the end of the question and puts it in the card; the notes label 19 of 19 lines and name all three speakers. Tried live with people talking in the room; not tried on a real video call |
+| Reliability | Server auto-start and restart after a kill are checked. Capture restarted itself 0.6 s after a simulated stream error. The app ran 5 h 53 min on live capture with no crash or stall and flat memory (app 0.38 GB, 9B 1.7 GB, 4B 0.42 GB), transcription 0.4 to 0.5 s per chunk at the end |
+| Pro features | Not built: the Argmax Pro key arrived without the SDK download token |
+
+The last gate on the test machine: questions 10/10, catch-up 3/3, watcher 15/16 (the watcher moves between 14
+and 16 of 16 from run to run on two lines). Known issues are listed in [BENCHMARKS.md](BENCHMARKS.md).
 
 Measurements and the method comparisons behind each default are in [BENCHMARKS.md](BENCHMARKS.md).
 The full plan is in [BRIEF.md](BRIEF.md).
@@ -91,7 +100,7 @@ build takes a few minutes while Core ML compiles the Whisper model.
 
 - **⌥Space** ask a question about the screen or what was said
 - **⌥C** catch me up
-- **⌥S** stop speaking (cuts the voice off at once)
+- **⌥S** stop speaking (cuts the voice off; checked in the self-test, not yet listened to by a person)
 - **⌥V** ask a question out loud (study mode); it stops by itself when you pause
 
 ## Try it with the demo material
@@ -137,7 +146,7 @@ Prompts and test cases are data files, so they can be edited on any machine with
 Sources/CluelessCore   timeline, Bonsai client, watcher, answerer, chunked transcription, OCR, speech
 Sources/Clueless       the app: ScreenCaptureKit capture and its restart, floating panel, hotkeys, HUD,
                        webcam presence, server supervision, speech queue, voice questions, receipts,
-                       call notes, a camera test window (testing only)
+                       call notes, the camera window, eye direction, the panel style, test hooks
 Sources/clueless-bench headless benchmarks (no permissions needed)
 scripts/               servers.sh, make_app.sh, check.sh, make_demo_assets.py, smoke_bonsai.py
 demo/                  demo assets generated locally: a multi-speaker call, a narrated lecture, a PDF
