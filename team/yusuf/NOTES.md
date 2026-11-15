@@ -5,7 +5,7 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Working on now
 
-(nothing claimed in session #1) Merged: T05, T16, T17, T07, T29, T20, T30, T25. T06 (`yusuf/receipts`, session #2) fails to build on the Mac mini because of `@State`; session #2 has been told.
+(nothing claimed in session #1) Merged: T05, T16, T17, T07, T29, T20, T30, T25. T06 (`yusuf/receipts`, session #2) is merged too (PR #15). Never use `@State` in the app: it does not compile on the Mac mini (no Xcode).
 
 ## Pushed, waiting for a Mac mini test
 
