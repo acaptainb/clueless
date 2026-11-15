@@ -60,7 +60,7 @@ Code is not done until it has passed on the Mac mini. After pushing a branch, ad
 STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
 once the PR is merged.
 
-Mac mini in use right now by: Aziz (camera test window, built from main)
+Mac mini in use right now by: Aziz (engine fixes T34 to T36, Mac mini session; the app is closed)
 
 Run order: the top row (`main` with PR #8) is next, ahead of any row added later; new rows go BELOW it. A `main` that does not run blocks every other branch.
 Then the Yusuf rows, then the remaining Aziz rows 2 to 4 in order. Row 3 makes the recordings that the top
@@ -114,6 +114,9 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T34 (new) Catch-up cards must come from the transcript: on the Mac mini a card summarised the terminal text on screen, and with an empty transcript it invented "you were asked" from the screen | Aziz | `aziz/catchup-grounding` | Sat 8:40 pm | Done at the Mac mini by the Mac mini session, so it is compiled and measured as it goes |
+| T35 (new) Call notes with real speakers and names: rebuild the transcript from the recording one speaker turn at a time (a live line can hold two people), stop SpeakerKit hearing 6 to 7 speakers for 3, and work the names out in code from who is addressed and who answers (the model gave 7/12) | Aziz | `aziz/call-notes-names` | Sat 8:40 pm | Mac mini session. Touches `Speakers.swift`, `prompts/names.txt`, the bench |
+| T36 (new) Bench command that plays a recording into a timeline and asks a list of questions at the end, to finish the T04 lecture audio questions and the real-audio half of T10; also `download: false` for TTSKit (asked by Yusuf in the work log) | Aziz | `aziz/lecture-questions` | Sat 8:40 pm | Mac mini session |
 | T33 (new) Wire call notes into the app (asked by Aziz in the work log for T13 to T15): record the session's system audio, load SpeakerKit with the other models, and in call mode make Session notes call `SessionNotes.make` so the notes are by speaker with names | Yusuf | `yusuf/call-notes-app` | Sat 7:52 pm | Written on the MacBook (session #2), compile-checked only. PR #24 (draft), in the test queue |
 | T31 (new) Camera test window, for testing only: live webcam picture with the face box, a Focused / Distracted / No person label and the numbers behind the look-away trigger (yaw, pitch, limit, tracker state), to tune T05 by eye in T28 | Aziz | `aziz/camera-test` | Sat 7:20 pm | Pushed (542c0b2), written on the Windows laptop, never compiled; in the test queue. Touches `Sources/Clueless/` (Yusuf's folder): one new file plus small edits in `Presence.swift`, `AppState.swift`, `OverlayView.swift`, `App.swift` |
 | T08 Cut the screenshot cost: OCR by default, image only for visual questions, smaller image; bench to measure each | Aziz | `aziz/screenshot-cost` | Sat 6:05 pm | Written on the Windows laptop, not compiled, nothing measured yet. App wiring is on `aziz/screenshot-cost-app` |
