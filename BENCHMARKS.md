@@ -310,8 +310,37 @@ which part matters), so one cache serves both.
 
 ## Known issues
 
+As of Sun Nov 15, 2 am. Each line says where it was seen.
+
 - First launch of a new build spends minutes compiling the Whisper Core ML model (6 min in the app, 2 min in the
   bench tool). Later launches take seconds. Launch once before any demo.
-- A forced cut at 8 s can split a word across two lines.
-- With a screenshot attached the first token takes about 6 s (image encoding). Consider OCR-only by default,
-  or a smaller image.
+- A catch-up card can still report something from the slide as if it had been said: 1 card of 4 in the in-person
+  test said "mini-batches of 64" three seconds before the lecturer did (the 64 was on the slide). T34 reduced
+  this (`clueless-bench grounding` 12/12) but did not remove it.
+- A catch-up card can attach a detail to the wrong item: twice on the demo lecture it wrote that the homework
+  "covers lectures 1 through 8", which was said about the midterm in the next sentence.
+- The watcher is not consistent on a question put to the whole group: "Do you want a quick status from
+  engineering first?" produced a card in 1 run of 3 on the demo call.
+- When a card is built in the middle of a sentence, the audio chunk in progress is cut there and the word at the
+  cut can be lost ("Go ahead, Sam." became "Ahead, Sam."). Name-triggered cards wait for a pause first (T38) and
+  do not do this; hotkey and look-away cards still can.
+- A name-triggered card waits for the speaker to finish, 6 s at most: 5.2 s on the demo call when the name came
+  before the question, 0.0 s when the name was inside it.
+- Late in a long session the first word is slow: 3.4 s after 20 minutes (120 timeline lines, nothing cached).
+  Section 8 has what was tried (T40).
+- Option+S stops the voice after the sentence being spoken, not mid-word (T43).
+- Call notes on the demo call report "4 speakers heard" for three people: two short lines fall into a fourth
+  cluster. The three names are right and every line is labelled.
+- Whisper mishears some words in the synthetic lecture voice ("workforce" for workhorse, "Cochi" for Cauchy).
+  Word error on the demo lecture is 10.4%.
+- With nothing playing, Whisper occasionally turns noise into "you" or "Thank you." (4 times in 2 quiet hours).
+  The app now drops a chunk that is only that (T39); the filter has not been seen firing yet.
+- Screen receipts save whatever is on the main display, secrets included, as JPEG files under `sessions/`
+  (seen Sun 2:19 am: a credentials file open in an editor was readable in a receipt). They stay on the Mac and are
+  ignored by git, but nothing deletes them. Clear `sessions/` before recording or demonstrating.
+- Not yet tried by a person: the hotkeys, a typed question, a spoken question, call mode with a real
+  microphone, and capture restarting itself.
+
+No longer issues (they were listed here on Saturday): a forced cut at 8 s now looks 3 s back for a gap between
+words (T37, lecture audio questions 5/5); a screenshot is only attached for visual questions and at 768 px
+(T08: a text question starts in 0.9 s with no image, a chart question takes 2.5 s with one).
