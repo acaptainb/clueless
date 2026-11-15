@@ -312,8 +312,9 @@ public struct Answerer: Sendable {
         case .catchUp:
             return """
             The user lost the thread and needs to be caught up right now.
-            - "asked": the question or request most recently directed at the user, in one sentence. "" if nobody asked them anything.
-            - "missed": the 1 to 2 most important things said recently, in one or two sentences.
+            "asked" and "missed" are about what people SAID, so take them only from the TIMELINE. Anything under ON SCREEN is background that nobody said: never report it as said, asked or missed, and never describe the screen.
+            - "asked": the question or request most recently directed at the user in the timeline, in one sentence. "" if nobody asked them anything.
+            - "missed": the 1 to 2 most important things said in the timeline recently, in one or two sentences.
             - "reply": one natural sentence the user could say out loud next. "" if no reply is needed.
             JSON shape: {"asked": "...", "missed": "...", "reply": "...", "sources": [215, 212]}
             """
@@ -327,17 +328,34 @@ public struct Answerer: Sendable {
         }
     }
 
+    /// How much screen text a catch-up gets. Questions get up to 4,000 characters.
+    static let catchUpScreenChars = 600
+
     public func answer(_ task: AnswerTask, lines: [TimelineLine], screenText: String, image: Data? = nil,
                        question: String? = nil, userName: String = "", thinking: Bool = false,
                        onPartial: (@Sendable (Card) -> Void)? = nil) async throws -> Card {
         // `head` only grows at its end from one request to the next (the timeline is append-only), so the
         // server can reuse it. `tail` is what changes every time.
+        // Nothing was said: there is nothing to catch up on, and no reason to ask a model. (Asked anyway, it
+        // filled the card from whatever text was on the screen.)
+        if task == .catchUp, lines.isEmpty {
+            var card = Card(task: task)
+            card.missed = "Nothing was said in the last few minutes."
+            return card
+        }
         var head = ""
         if !userName.isEmpty { head += "User name: \(userName)\n\n" }
         head += "TIMELINE (newest last):\n" + (lines.isEmpty ? "(nothing said yet)" : lines.rendered) + "\n\n"
         var tail = ""
-        if !screenText.isEmpty { tail += "SCREEN TEXT (OCR of the user's current screen):\n\(String(screenText.prefix(4000)))\n\n" }
-        if image != nil { tail += "The attached image is the user's current screen.\n\n" }
+        if task == .catchUp {
+            // A catch-up is about what was said. The screen is only there to help read the words (a slide
+            // title, a name), so it is short and labelled as something nobody said.
+            if !screenText.isEmpty { tail += "ON SCREEN (background only, nobody said this):\n\(String(screenText.prefix(Self.catchUpScreenChars)))\n\n" }
+            if image != nil { tail += "The attached image is the user's current screen (background only).\n\n" }
+        } else {
+            if !screenText.isEmpty { tail += "SCREEN TEXT (OCR of the user's current screen):\n\(String(screenText.prefix(4000)))\n\n" }
+            if image != nil { tail += "The attached image is the user's current screen.\n\n" }
+        }
         if let question { tail += "QUESTION: \(question)\n" }
         tail += "Task: \(task.rawValue)"
 

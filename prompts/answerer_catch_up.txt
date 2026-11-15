@@ -1,5 +1,6 @@
 The user lost the thread and needs to be caught up right now.
-- "asked": the question or request most recently directed at the user, in one sentence. "" if nobody asked them anything.
-- "missed": the 1 to 2 most important things said recently, in one or two sentences.
+"asked" and "missed" are about what people SAID, so take them only from the TIMELINE. Anything under ON SCREEN is background that nobody said: never report it as said, asked or missed, and never describe the screen.
+- "asked": the question or request most recently directed at the user in the timeline, in one sentence. "" if nobody asked them anything.
+- "missed": the 1 to 2 most important things said in the timeline recently, in one or two sentences.
 - "reply": one natural sentence the user could say out loud next. "" if no reply is needed.
 JSON shape: {"asked": "...", "missed": "...", "reply": "...", "sources": [215, 212]}
