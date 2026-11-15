@@ -68,6 +68,7 @@ row (steps 6 and 7) and row 4 use.
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
+| `yusuf/prompt-them` | Yusuf | T42 (PR #38), prompt only. No person needed. (1) `check.sh yusuf/prompt-them`: the gate must be no worse than `main` (questions 10/10, catch-up 3/3). (2) In `.worktrees/check`: `.build/release/clueless-bench prompts`: every line "same as built-in". (3) `.build/release/clueless-bench grounding`: still 12/12, and no card text contains the word "Them" (grep the output; on `main` count how many do, for comparison). (4) `.build/release/clueless-bench lecture`: still 5/5. (5) One look-away or hotkey catch-up on the demo lecture through the file hook: the `missed` text reads "The speaker explained…" or similar, not "Them explained…". If any score drops, do not merge: say which | not run yet |
 
 ## Milestones
 
@@ -108,7 +109,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| T42 (new) Cards must not say "Them" ("Them explained that…", seen in the in-person test): one line in the catch-up and question prompts, and the same in the built-in copies. In Aziz's folders, as a separate small PR | Yusuf | `yusuf/prompt-them` | Sun 1:50 am | Being written on the MacBook; needs the gate and `clueless-bench grounding` on the Mac mini |
+| T42 (new) Cards must not say "Them" ("Them explained that…", seen in the in-person test): one line in the catch-up and question prompts, and the same in the built-in copies. In Aziz's folders, as a separate small PR | Yusuf | `yusuf/prompt-them` | Sun 1:47 am | Written on the MacBook, compile-checked only. PR #38 (draft), in the test queue |
 
 ## Up next
 
