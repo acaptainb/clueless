@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 11:15 am ET by Aziz
+Last updated: Sun Nov 15, 11:20 am ET by Aziz
 
 ## People
 
@@ -68,7 +68,6 @@ row (steps 6 and 7) and row 4 use.
 
 | Branch | Who | What to test beyond `check.sh` | Result |
 |---|---|---|---|
-| `aziz/study-fixes` | Aziz | T50 (PR #47), four study-mode changes asked for by Aziz in person. Written on Windows, never compiled. `check.sh aziz/study-fixes app`; gate numbers unchanged (no engine change). With a person, lecture playing: (1) under the question field there is a second row: Catch me up, "Speaking", "Reply", and the "…" menu at the right; the placeholder in the question field is no longer cut off; the menu has no "Speak answers" entry. (2) Click "Speaking": it reads "Silent", a voice that is playing stops, the next card is not spoken; click again: the next card is spoken. (3) Click "Reply": the blue "You could say" box disappears from the catch-up card on screen and from the next one; click again: it is back. (4) Open the camera window and watch the eye next to "Clueless": it turns orange and slashed at the same moment the window says "Distracted" or "No person", and green when it says "Focused". (5) Look away 3 to 4 s and back: the log has no `Looked away` line; look away 8 s and back: a card titled with the seconds, as before. If a button label does not change when clicked (the setting changed but the view did not redraw), say so | Gate, Sun 10:40 am: `PASS aziz/study-fixes @ 6ebcfc6: build ok, questions 10/10, catch-up 3/3, watcher 15/16`, selftest 26/26. Compiled first time. Watcher 15/16 is run-to-run variation, not this branch (no engine or prompt file changed): four more runs of `clueless-bench watch` gave 14/16 once, then 16/16 three times. App launched 10:41 am with live capture, no error lines. Screenshot of the panel: the second row is there (Catch me up, "Silent", Reply, "…" at the right; "Silent" because `speak = 0` is saved on this Mac), the placeholder is no longer cut off, the status text still wraps. The webcam items are with Aziz in person: no written result. In person by Aziz, Sun about 11:15 am: the buttons work (steps 1 to 3). **No look-away card was seen** (step 5); Aziz accepts that for the video; cause not looked for. Step 4 (eye in sync) not reported. Call mode worked while talking with people in the room; not tried on a real Zoom call. Not merged yet |
 
 ## Milestones
 
@@ -109,7 +108,6 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
-| T50 (new) Study mode, from Aziz's in-person test of `main @ aee6bbd`: a button that hides the blue "You could say" box; "Speak answers" as a button next to Catch me up instead of a menu entry; the eye next to "Clueless" follows the camera at once (it lagged by seconds); looking away counts after 4.5 s, not 3 s | Aziz | `aziz/study-fixes` | Sun 11:00 am | After the feature freeze: asked for by Aziz during the demo test. Pushed (PR #47, draft), written on the Windows laptop, never compiled; in the test queue. In `Sources/Clueless/` (Yusuf's folder: `OverlayView.swift`, `AppState.swift`, `Presence.swift`, `CameraTestView.swift`), one small PR |
 
 ## Up next
 
@@ -160,6 +158,7 @@ Newest first. One line each; details and numbers are in WORKLOG.md and BENCHMARK
 
 | Task | Who | When | Where |
 |---|---|---|---|
+| T50 Study mode, from the in-person test: "Speak answers" is a button (Speaking / Silent) next to Catch me up; a Reply button hides the "You could say" box; question field on its own row; the header eye follows the camera frame by frame; looking away counts after 4.5 s. `check.sh` PASS (10/10, 3/3, watcher 15/16), compiled first time. In person by Aziz: the buttons work. NOT confirmed: no look-away card was seen in that test (cause not looked for), and the eye being in sync was not reported | Aziz | Sun 11:20 am | PR #47 |
 | T49 Restyle for the demo video (Liquid Glass panel, cards and camera window, `Style.swift`), visual only. Compiled first time; `check.sh` PASS on the branch and on the combined `main`. Empty panel looked at: dark and readable; the status text wraps to two lines and the question placeholder is cut off. Cards, camera window and `CLUELESS_GLASS=0` not looked at by the runner | Aziz | Sun 10:20 am | PR #46 |
 | T48 Camera window "Clueless camera" and eye direction in the look-away trigger. Compiled first time; `check.sh` PASS. Merged on Aziz's word; the camera items (a person at the webcam) have no written result | Aziz | Sun 10:20 am | PR #45 |
 | T44 Three app fixes: pause during a capture restart stays paused; pause keeps the audio still waiting; a failed catch-up card shows its error. Compiled first time; `check.sh` PASS. Merged on Aziz's word; none of its live items has been run (item 1 needs the servers stopped after launch) | Aziz | Sun 10:20 am | PR #44 |
