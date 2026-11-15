@@ -102,6 +102,95 @@ The app streams, so the user reads the first field while the rest is written. Wi
 - Not yet verified live: answer correctness against a real lecture on screen, spoken answers, hotkeys,
   call mode with the microphone, Wi-Fi off.
 
+## 7. Second round, Saturday evening (engine work from PRs #6, #7, #8)
+
+Measured Sat Nov 14, 7:10 to 7:40 pm on the Mac mini, `main @ 6e9d4e8`. The machine is much faster than in the
+afternoon numbers above: the 9B now generates at about 68 tok/s (15 to 23 before), a question card takes about
+0.9 s and a catch-up about 1.6 s. Nothing in the code explains a 3x change; the afternoon runs were made with
+27 of 32 GB of memory in use.
+
+Gate: `PASS main @ 6e9d4e8: build ok, questions 10/10, catch-up 3/3, watcher 16/16`, self-test 21/21,
+extra question set (`questions_more`) 10/10.
+
+### Screenshot cost (T08, `clueless-bench screencost`)
+
+Correct answers, and seconds to first token, by what is sent. "auto" sends the screenshot only for visual questions.
+
+| What is on screen | ocr | both 1024 | both 768 | both 512 | auto 1024 | auto 768 | auto 512 |
+|---|---|---|---|---|---|---|---|
+| Test slide alone, 6 questions | 5/6, 0.31 s | 6/6, 1.79 s | 6/6, 1.11 s | 6/6, 0.74 s | 6/6, 0.58 s | 6/6, 0.45 s | 6/6, 0.39 s |
+| Same slide in a window on the real 1920x1080 screen | 5/6, 0.69 s | 6/6, 0.94 s | 6/6, 0.82 s | 6/6, 0.76 s | 6/6, 0.70 s | 5/6, 0.69 s | 6/6, 0.68 s |
+| Demo lecture slide 4 (chart, 2 colour questions) | 0/2, 0.31 s | 2/2, 1.67 s | 2/2, 1.07 s | 1/2, 0.74 s | 2/2, 1.69 s | 2/2, 1.07 s | 1/2, 0.73 s |
+| Demo lecture slides 3, 5, 6 (5 questions) | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| Demo paper page 1 (8 questions) | 8/8, 0.72 s | 8/8, 0.99 s | 8/8, 0.87 s | 8/8, 0.79 s | 8/8, 0.67 s | 8/8, 0.66 s | 8/8, 0.66 s |
+| Demo paper page 2 (3 questions, one about the figure) | 3/3, 0.48 s | 3/3, 2.48 s | 3/3, 1.55 s | 3/3, 0.94 s | 3/3, 1.17 s | 3/3, 0.85 s | 3/3, 0.64 s |
+
+- The policy check is 17/17. In the live app, "when is the homework due" went out with no image (0.9 s) and
+  "which curve diverges, and what colour is it" attached the screenshot and answered "red" (2.5 s at 1024).
+- **Default image size is now 768** (was 1024). 512 loses the colour of the diverging curve on the chart slide;
+  768 gets every visual question and reaches the first token about 0.6 s sooner than 1024. The one miss in the
+  768 column (real screen, update rule written with "n" for eta) also happens with OCR alone and passed at the
+  other sizes, so it is run-to-run variation, not the size.
+- OCR alone cannot answer questions about colour or shape (0/2 on the chart slide), which is why auto matters.
+
+### Prompt layout (T09, `clueless-bench cache`)
+
+| Layout | Prompt tokens evaluated | Cached | First token | Whole card |
+|---|---|---|---|---|
+| classic (old order) | 326 | 208 | 0.47 s | 1.30 s |
+| stable (new default) | 412 | 123 | 0.58 s | 1.31 s |
+
+The new layout is **not** a win here: it reuses fewer tokens and the first token comes 0.1 s later. Scores are the
+same either way. Worth switching the default back to classic, or finding why the stable prefix is shorter.
+
+### Names and call notes (T13, T14, T15)
+
+- `clueless-bench names`: **7/12** over 3 runs (expected 10 to 12). The resolver gives a name to the person who
+  SAID it instead of the person addressed: Sam becomes "Maya", and Maya stays "Speaker 1".
+- `clueless-bench speakers demo/call/call.wav 3`: 3 speakers found in 23 turns, 0.31 s to label.
+- `clueless-bench notes 8080 demo/call/call.wav`: 36 lines transcribed, but **6 speakers heard and no names
+  resolved**, so the notes say "Speaker 4", "Speaker 5". The content is mostly right (Friday release candidate,
+  Thursday 10 pm maintenance window, 12k budget, tablet layout cut) with one invented item ("Sam fixed push via
+  spy website"). Without a speaker count SpeakerKit over-splits the three synthetic voices, and one chunk can
+  hold two people ("Go ahead, Sam! The API changes are merged").
+- Setup note: SpeakerKit models must be in `models/argmax/speakerkit-coreml`. On the Mac mini they had been
+  downloaded to `models/argmax/models/argmaxinc/speakerkit-coreml` and were copied across.
+
+### Word-safe cuts (T19, `clueless-bench chunk` on the 162 s demo lecture)
+
+| Method | Word error | Chunks | Avg lag | Worst lag |
+|---|---|---|---|---|
+| Cut at a pause, 2 to 8 s, word-safe forced cut | 10.4% | 44 | 2.2 s | 8.2 s |
+| Same, hard forced cut | 10.4% | 44 | 2.2 s | 8.5 s |
+| Fixed 5 s | 18.9% | 33 | 2.9 s | 5.6 s |
+
+No measurable difference on this recording: the narrator pauses often, so forced cuts are rare.
+
+### Single-server control (T27)
+
+`servers.sh stop watcher` leaves 8080 up and 8082 down; `start watcher` brings it back and the answerer keeps
+the same process id.
+
+### Real material (T04)
+
+Headless, against the demo assets: PDF pages and lecture slides rendered to full-screen images, default policy
+(auto, 768 px), plus one full run of the 162 s demo lecture through the app.
+
+| Material | Questions | Result |
+|---|---|---|
+| Paper, page 1 | 8, from the text | 8/8, about 1.1 s each |
+| Paper, page 2 | 3, one about the figure | 3/3 |
+| Lecture slides 3, 5, 6 | 5, from the screen | 5/5 |
+| Lecture slide 4 (chart) | 2, colour of the curves | 2/2 with the screenshot (0/2 from OCR alone) |
+| Lecture audio, "When are office hours this week?" asked at the end | 1 | **MISS**: "The provided timeline does not contain information about office hours" |
+
+The miss is not the model. The line was transcribed correctly ("My office hours this week moved to Tuesday at 3")
+but never reached the model: a question sends at most 45 timeline lines, the lecture made 45 lines in 162 s
+(chunks average 3.7 s), and the stepped window then drops the oldest ten. The 5-minute window holds about
+80 lines at this pace. Fix: raise the cap (about 120 lines is roughly 1,600 tokens, under a second of prompt
+time at the current speed) or join consecutive chunks from one speaker into one line. This question is on the
+demo run sheet, so it matters. The other four audio questions and the live browser lecture were not run.
+
 ## Known issues
 
 - First launch of a new build spends minutes compiling the Whisper Core ML model (6 min in the app, 2 min in the
