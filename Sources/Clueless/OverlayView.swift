@@ -51,6 +51,10 @@ struct OverlayView: View {
                           : state.presence == .away ? "Webcam on: you looked away. Clueless will catch you up when you are back"
                           : "Camera not available. Allow Camera for Clueless in System Settings › Privacy & Security")
             }
+            // Opens and closes the camera window (T48): the live picture with Focused / Distracted / No person.
+            Button(action: state.toggleCameraWindow) { Image(systemName: state.cameraTest ? "video.fill" : "video") }
+                .buttonStyle(.borderless)
+                .help(state.cameraTest ? "Close the camera window" : "Show the camera window: what the webcam sees")
             Text(state.recording ? "Recording screen + audio · on this Mac only" : state.status)
                 .font(.caption).foregroundStyle(.secondary).lineLimit(2)
             Spacer()
@@ -118,7 +122,9 @@ struct OverlayView: View {
                 Button("Session notes", action: state.notes)
                 Toggle("Speak answers", isOn: $state.speak)
                 Toggle("Catch me up when I look away (webcam)", isOn: $state.lookAway)
-                Button("Camera test window (testing only)") { state.openCameraTest() }
+                Toggle("Count eye direction as looking away", isOn: $state.countEyes)
+                    .disabled(AppState.eyesForcedOff)
+                Button("Camera window") { state.openCameraTest() }
                 Picker("Screen input", selection: $state.screenMethodRaw) {
                     Text("Auto: screenshot only for visual questions").tag(ScreenMethod.auto.rawValue)
                     Text("Screenshot + OCR text (most accurate)").tag(ScreenMethod.both.rawValue)

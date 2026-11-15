@@ -2,7 +2,8 @@ import Foundation
 import Vision
 
 /// Where the eyes point, estimated from Apple Vision face landmarks (not a language model).
-/// FOR TESTING ONLY (T31): the camera test window shows it; the look-away trigger does not use it.
+/// Since T48 the look-away trigger uses it too (Presence.swift), unless "Count eye direction as looking
+/// away" is off or CLUELESS_EYES=0. The camera window's tracking view shows the numbers.
 /// The estimate is rough: it compares each pupil with the outline of its eye, so it says "the eyes are
 /// turned left / right / up / down within the eye", not what point on the screen is being looked at.
 struct EyeGaze {
@@ -20,12 +21,26 @@ struct EyeGaze {
     /// Eye height divided by eye width, mean of both eyes. Small means closed.
     var openness: Double?
 
-    // Starting values, never tuned: the test window exists to find better ones.
-    static let horizontalLimit = 0.35
-    static let verticalLimit = 0.60
+    // Starting values, never tuned: guesses. The camera window's tracking view shows the live numbers;
+    // CLUELESS_EYE_H and CLUELESS_EYE_V override the two limits without a rebuild.
+    static let defaultHorizontalLimit = 0.35
+    static let defaultVerticalLimit = 0.60
+    static let horizontalLimit = EyeGaze.limit("CLUELESS_EYE_H", EyeGaze.defaultHorizontalLimit)
+    static let verticalLimit = EyeGaze.limit("CLUELESS_EYE_V", EyeGaze.defaultVerticalLimit)
     static let closedBelow = 0.15
 
+    private static func limit(_ name: String, _ fallback: Double) -> Double {
+        guard let raw = ProcessInfo.processInfo.environment[name], let value = Double(raw), value > 0 else {
+            return fallback
+        }
+        return value
+    }
+
     enum Verdict: Equatable { case onScreen, sideways, upOrDown, closed, unknown }
+
+    /// True only when the eyes are open and turned away from the screen. Closed eyes (a blink) and
+    /// eyes that were not found are NOT "looking away": the head-only rule decides those frames (T48).
+    var lookingAway: Bool { verdict == .sideways || verdict == .upOrDown }
 
     var verdict: Verdict {
         guard let openness else { return .unknown }
@@ -37,7 +52,7 @@ struct EyeGaze {
     }
 
     /// Runs Vision's landmark detection on one face that was already found. Returns nil when Vision
-    /// gives no landmarks. Costs one more Vision request per frame, so call it only while testing.
+    /// gives no landmarks. Costs one more Vision request per analysed frame (about 3 a second).
     static func measure(face: VNFaceObservation, in pixels: CVPixelBuffer) -> EyeGaze? {
         let request = VNDetectFaceLandmarksRequest()
         request.inputFaceObservations = [face]

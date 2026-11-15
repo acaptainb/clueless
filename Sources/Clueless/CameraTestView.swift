@@ -3,10 +3,12 @@ import SwiftUI
 import AVFoundation
 import CluelessCore
 
-// Camera test window (T31). FOR TESTING ONLY: it never opens by itself. Open it from the "…" menu or
-// launch with CLUELESS_CAMERA_TEST=1. It shows what the look-away trigger sees: the live webcam
-// picture, the face Vision picked, the per-frame decision and the debounced tracker state.
-// It also shows an experimental eye-gaze estimate (EyeGaze.swift) that the trigger does not use.
+// Camera window (T31, made a demo window in T48). It never opens by itself: open it with the camera button
+// in the panel header, from the "…" menu, or launch with CLUELESS_CAMERA_TEST=1.
+// Normal view: the live webcam picture and one label, Focused / Distracted / No person.
+// Tracking view (the eye button): also the face Vision picked, the eye outlines and pupils, and the numbers
+// behind the decision. The label is the per-frame decision the look-away trigger uses (head angle and,
+// unless turned off, eye direction: EyeGaze.swift), so the window and the trigger always agree.
 // It reads the frames of the same `Presence` object the trigger uses, so there is no second detector.
 // Apple Vision face detection only; nothing is saved or sent. The window is not hidden from screen sharing.
 
@@ -19,7 +21,7 @@ enum CameraTestState: Equatable {
         case .unavailable: return "Camera unavailable"
         case .waiting: return "Waiting for the camera…"
         case .noPerson: return "No person"
-        case .distracted: return "Distracted / looking away"
+        case .distracted: return "Distracted"
         case .focused: return "Focused"
         }
     }
@@ -47,6 +49,16 @@ final class CameraTestModel: ObservableObject {
     @Published var rawSince = Date()
     /// When the tracker last switched between present and away.
     @Published var trackerSince = Date()
+    /// false = normal view (picture and one label), true = tracking view (overlays and numbers).
+    /// Lives here and not in `@State`: `@State` does not compile on the Mac mini (no Xcode).
+    @Published var tracking = false
+    /// Set by the window, which changes its size to fit the view.
+    var onTracking: (@MainActor (Bool) -> Void)?
+
+    func toggleTracking() {
+        tracking.toggle()
+        onTracking?(tracking)
+    }
 
     func ingest(_ new: Presence.Frame) {
         if let old = frame {
@@ -76,7 +88,7 @@ struct CameraTestView: View {
         TimelineView(.periodic(from: Date(), by: 0.5)) { context in
             content(now: context.date)
         }
-        .frame(minWidth: 760, minHeight: 400)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func current(now: Date) -> CameraTestState {
@@ -88,37 +100,57 @@ struct CameraTestView: View {
     private func content(now: Date) -> some View {
         let shown = current(now: now)
         let frame = shown == .waiting || shown == .unavailable ? nil : model.frame
+        let tracking = model.tracking
         return HStack(alignment: .top, spacing: 14) {
-            CameraPreview(session: state.webcam.previewSession, box: frame?.box, eyes: frame?.eyes,
-                          imageSize: frame?.imageSize ?? .zero, color: shown.color)
-                .frame(minWidth: 440, minHeight: 330)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            VStack(alignment: .leading, spacing: 8) {
-                Text(shown.title)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12).padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: shown.color)))
-                    .fixedSize(horizontal: false, vertical: true)
-                if shown == .unavailable {
-                    Text("Allow Camera for Clueless in System Settings › Privacy & Security, then reopen this window.")
-                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-                if let frame, frame.faces > 1 {
-                    Text("\(frame.faces) faces visible. Only the largest (boxed) is used.")
-                        .font(.callout.bold()).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
-                }
-                if let frame, frame.faces > 0 { eyeLabel(frame.eyes) }
-                Divider()
-                numbers(frame: frame, now: now)
+            VStack(spacing: 8) {
+                // Normal view: the picture only. The face box and the eyes are drawn in the tracking view.
+                CameraPreview(session: state.webcam.previewSession, box: tracking ? frame?.box : nil,
+                              eyes: tracking ? frame?.eyes : nil,
+                              imageSize: frame?.imageSize ?? .zero, color: shown.color)
+                    .aspectRatio(4.0 / 3.0, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                labelRow(shown)
                 Spacer(minLength: 0)
-                Text("Testing only. Apple Vision face detection on this Mac; nothing is saved or sent.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            .frame(width: 290)
+            if tracking {
+                VStack(alignment: .leading, spacing: 8) {
+                    if shown == .unavailable {
+                        Text("Allow Camera for Clueless in System Settings › Privacy & Security, then reopen this window.")
+                            .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let frame, frame.faces > 1 {
+                        Text("\(frame.faces) faces visible. Only the largest (boxed) is used.")
+                            .font(.callout.bold()).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let frame, frame.faces > 0 { eyeLabel(frame) }
+                    numbers(frame: frame, now: now)
+                    Spacer(minLength: 0)
+                    Text("Apple Vision face detection on this Mac; nothing is saved or sent.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(width: 290)
+            }
         }
-        .padding(14)
+        .padding(10)
+    }
+
+    /// The one large label, and the eye button that switches between the normal and the tracking view.
+    private func labelRow(_ shown: CameraTestState) -> some View {
+        HStack(spacing: 8) {
+            Text(shown.title)
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: shown.color)))
+            Button(action: model.toggleTracking) {
+                Image(systemName: model.tracking ? "eye.fill" : "eye").font(.title3)
+            }
+            .buttonStyle(.borderless)
+            .help(model.tracking ? "Hide the tracking details" : "Show the tracking details: face box, eyes and numbers")
+        }
     }
 
     private func numbers(frame: Presence.Frame?, now: Date) -> some View {
@@ -129,7 +161,10 @@ struct CameraTestView: View {
             row("Pitch (up / down)", degrees(frame?.pitch), over: isOver(frame?.pitch, limit))
             row("Limit (maxAngle)", limit.map { String(format: "±%.0f° (%.2f rad)", $0 * 180 / .pi, $0) } ?? "–")
             row("Faces found", frame.map { "\($0.faces)" } ?? "–")
-            row("This frame counts as", frame.map { $0.attending ? "facing the screen" : "not facing" } ?? "–")
+            row("Head alone", frame.map { $0.headAttending ? "facing the screen" : "not facing" } ?? "–")
+            row("Eye direction", state.eyesCount ? "counts as looking away"
+                : AppState.eyesForcedOff ? "not used (CLUELESS_EYES=0)" : "not used (setting off)")
+            row("This frame counts as", frame.map { $0.attending ? "focused" : "not focused" } ?? "–")
             row("  for", frame == nil ? "–" : seconds(now.timeIntervalSince(model.rawSince)))
             Divider()
             row("Tracker (debounced)", frame.map { $0.away ? "AWAY" : "present" } ?? "–", over: frame?.away == true)
@@ -163,8 +198,9 @@ struct CameraTestView: View {
         }
     }
 
-    /// Second, smaller label: what the eyes are doing. Experimental and separate from the trigger.
-    private func eyeLabel(_ eyes: EyeGaze?) -> some View {
+    /// Second, smaller label: what the eyes are doing, and whether that counts for the decision.
+    private func eyeLabel(_ frame: Presence.Frame) -> some View {
+        let eyes = frame.eyes
         let verdict = eyes?.verdict ?? .unknown
         let text: String
         let color: NSColor
@@ -179,7 +215,7 @@ struct CameraTestView: View {
         case .closed: text = "Eyes: closed"; color = .systemRed
         case .unknown: text = "Eyes: not found"; color = .systemGray
         }
-        return Text(text + "  (experimental, not used by the trigger)")
+        return Text(text + (frame.eyesCount ? "" : "  (not counted)"))
             .font(.callout.bold())
             .foregroundStyle(Color(nsColor: color))
             .fixedSize(horizontal: false, vertical: true)
@@ -313,28 +349,46 @@ final class CameraTestWindow: NSObject, NSWindowDelegate {
     private weak var state: AppState?
     private(set) var closed = false
 
+    /// Content sizes: the normal view is a 320 x 240 picture and the label; the tracking view adds the numbers.
+    static let normalSize = NSSize(width: 340, height: 318)
+    static let trackingSize = NSSize(width: 760, height: 580)
+
     init(state: AppState) {
         self.state = state
         model = CameraTestModel()
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 420),
+        window = NSWindow(contentRect: NSRect(origin: .zero, size: CameraTestWindow.normalSize),
                           styleMask: [.titled, .closable, .miniaturizable, .resizable],
                           backing: .buffered, defer: false)
         super.init()
-        window.title = "Clueless camera test (testing only)"
+        window.title = "Clueless camera"
         window.isReleasedWhenClosed = false
+        // Stays above other windows like the panel, so it can sit beside it during a recording.
+        window.level = .floating
         // Deliberately NOT hidden from screen sharing: sharingType stays at its default.
         window.delegate = self
-        window.contentView = NSHostingView(rootView: CameraTestView(state: state, model: model))
+        let hosting = NSHostingView(rootView: CameraTestView(state: state, model: model))
+        // The window decides its own size (two fixed sizes, below); the content fills whatever it gets.
+        hosting.sizingOptions = []
+        window.contentView = hosting
         window.center()
         let sink = model
         state.webcam.onFrame = { [weak sink] frame in sink?.ingest(frame) }
-        state.webcam.setEyeTracking(true)   // only while this window is open
+        model.onTracking = { [weak self] on in self?.resize(tracking: on) }
+        state.webcam.setEyeTracking(true)   // draw the eyes while this window is open, even if they do not count
         state.cameraTest = true   // turns the webcam on even when capture is paused
     }
 
     func show() {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// Resize for the view, keeping the top left corner where it is.
+    private func resize(tracking: Bool) {
+        let size = tracking ? CameraTestWindow.trackingSize : CameraTestWindow.normalSize
+        var frame = window.frameRect(forContentRect: NSRect(origin: .zero, size: size))
+        frame.origin = NSPoint(x: window.frame.minX, y: window.frame.maxY - frame.height)
+        window.setFrame(frame, display: true)
     }
 
     /// Close exactly as the red button does. Used by the CLUELESS_CAMERA_TEST_CLOSE test hook.
@@ -354,5 +408,10 @@ extension AppState {
     func openCameraTest() {
         if CameraTestWindow.current?.closed != false { CameraTestWindow.current = CameraTestWindow(state: self) }
         CameraTestWindow.current?.show()
+    }
+
+    /// The camera button in the panel header: opens the window, or closes it if it is open.
+    func toggleCameraWindow() {
+        if let open = CameraTestWindow.current, !open.closed { open.closeLikeTheButton() } else { openCameraTest() }
     }
 }
