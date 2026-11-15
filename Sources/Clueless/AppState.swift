@@ -76,6 +76,7 @@ final class AppState: ObservableObject {
     private var lastWatchTrigger = Date.distantPast   // last automatic catch-up (watcher or look-away)
     /// When the other side was last heard speaking (system audio above the chunker's pause level). T38.
     private var lastThemSpeechAt = Date.distantPast
+    private var lastFlushAt = Date.distantPast
     private let micGate = ProcessInfo.processInfo.environment["CLUELESS_MIC_GATE"] != "0"
     private var starting = false       // a `start()` is in flight: a second one would open a second stream
     private var voiceSession = 0       // counts spoken questions, for the stuck-microphone failsafe
@@ -280,7 +281,15 @@ final class AppState: ObservableObject {
             await previous?.value
             guard let self, let transcriber = self.transcriber else { return }
             let t0 = Date()
-            guard let text = try? await transcriber.transcribe(chunk.samples), text.count > 1 else { return }
+            // WhisperKit does not decode audio shorter than 1 s (it returns empty text at once), and a flush
+            // can cut a piece as short as 0.5 s: its words were lost (found on the Mac mini). Pad such a piece
+            // with silence to 1.2 s so it is decoded.
+            var samples = chunk.samples
+            if samples.count < 17_600 {
+                samples += [Float](repeating: 0, count: 19_200 - samples.count)
+                Log.write("[stt] short piece (\(String(format: "%.2f", Double(chunk.samples.count) / 16_000)) s) padded to 1.2 s")
+            }
+            guard let text = try? await transcriber.transcribe(samples), text.count > 1 else { return }
             self.hud.stt = Date().timeIntervalSince(t0)
             if Self.isSilenceFiller(text) {
                 Log.write("[stt] dropped \"\(text)\": Whisper writes this on near-silent audio")
@@ -306,9 +315,14 @@ final class AppState: ObservableObject {
     /// Never waits longer than `maxWait`.
     private func flushAudio(maxWait: TimeInterval = 2) async {
         let t0 = Date()
+        // The look-away trigger flushes to count what was missed and then `run` flushes again for the card.
+        // Two cuts a moment apart leave a piece too short for Whisper between them, and its words were lost
+        // (seen on the Mac mini). A flush that follows another within 2 s only waits for the queue.
+        let cut = Date().timeIntervalSince(lastFlushAt) > 2
+        lastFlushAt = Date()
         var flushed = 0
         for source in [Capture.Source.system, .mic] {
-            guard var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
+            guard cut, var chunker = chunkers[source], let chunk = chunker.flush() else { continue }
             chunkers[source] = chunker
             enqueue(chunk, source: source)
             flushed += 1
@@ -321,7 +335,7 @@ final class AppState: ObservableObject {
         while !flag.done, Date().timeIntervalSince(t0) < maxWait {
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
-        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)")")
+        Log.write("[flush] \(flushed) chunk(s) cut early, waited \(String(format: "%.2f", Date().timeIntervalSince(t0)))s\(flag.done ? "" : " (gave up waiting)")\(cut ? "" : " (no cut: flushed under 2 s ago)")")
     }
 
     private func runWatcher() {
