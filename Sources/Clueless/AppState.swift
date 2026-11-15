@@ -281,7 +281,15 @@ final class AppState: ObservableObject {
             await previous?.value
             guard let self, let transcriber = self.transcriber else { return }
             let t0 = Date()
-            guard let text = try? await transcriber.transcribe(chunk.samples), text.count > 1 else { return }
+            // WhisperKit does not decode audio shorter than 1 s (it returns empty text at once), and a flush
+            // can cut a piece as short as 0.5 s: its words were lost (found on the Mac mini). Pad such a piece
+            // with silence to 1.2 s so it is decoded.
+            var samples = chunk.samples
+            if samples.count < 17_600 {
+                samples += [Float](repeating: 0, count: 19_200 - samples.count)
+                Log.write("[stt] short piece (\(String(format: "%.2f", Double(chunk.samples.count) / 16_000)) s) padded to 1.2 s")
+            }
+            guard let text = try? await transcriber.transcribe(samples), text.count > 1 else { return }
             self.hud.stt = Date().timeIntervalSince(t0)
             if Self.isSilenceFiller(text) {
                 Log.write("[stt] dropped \"\(text)\": Whisper writes this on near-silent audio")
