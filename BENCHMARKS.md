@@ -16,7 +16,7 @@ Test audio is synthetic (`say`), so word error rates are optimistic; the ranking
 | `argmax-cli transcribe` (large-v3-v20240930_626MB) | ok, 3.2 s for 10.6 s of audio, warm |
 | `argmax-cli tts` (0.6B) | ok, 0.09 s to first audio, faster than real time (RTF 0.72) |
 | `argmax-cli diarize` | ok |
-| Wi-Fi off | **not yet verified** (servers run with `--offline`, speech models load from `models/`) |
+| Wi-Fi off | **works** (Sun Nov 15, Aziz in person: the whole app ran with Wi-Fi turned off; Wi-Fi is this Mac's only network connection. No timings were taken. Servers run with `--offline`, speech models load from `models/`) |
 
 Memory: 9B server 4.0 GB, 2B server 0.8 GB, app about 0.2 GB plus Core ML models.
 
