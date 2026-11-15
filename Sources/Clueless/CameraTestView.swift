@@ -337,6 +337,9 @@ final class CameraTestWindow: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// Close exactly as the red button does. Used by the CLUELESS_CAMERA_TEST_CLOSE test hook.
+    func closeLikeTheButton() { window.performClose(nil) }
+
     func windowWillClose(_ notification: Notification) {
         closed = true
         state?.webcam.onFrame = nil

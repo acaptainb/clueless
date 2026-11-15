@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Carbon.HIToolbox
+import CluelessCore
 
 @main
 enum Main {
@@ -48,6 +49,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.orderFrontRegardless()
         // Test hook: CLUELESS_CAMERA_TEST=1 opens the camera test window at launch (CameraTestView.swift).
         if ProcessInfo.processInfo.environment["CLUELESS_CAMERA_TEST"] == "1" { state.openCameraTest() }
+        // Test hook: CLUELESS_CAMERA_TEST_CLOSE=<seconds> closes that window again after a delay, the way the
+        // red button does, so "closing it must not quit the app" can be checked with nobody at the Mac.
+        if let s = ProcessInfo.processInfo.environment["CLUELESS_CAMERA_TEST_CLOSE"], let seconds = Double(s) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+                Log.write("[camera test] closing the window (test hook)")
+                CameraTestWindow.current?.closeLikeTheButton()
+            }
+        }
 
         // Global hotkeys (Carbon: no Accessibility permission needed).
         hotKeys = [
@@ -79,7 +88,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.setFrame(frame, display: true)
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    /// Quit when the Clueless panel itself is closed, not when a secondary window is. The camera test window
+    /// is the app's only regular window (the panel is an NSPanel, which AppKit does not count), so closing it
+    /// used to end the whole session.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        !(panel?.isVisible ?? false)
+    }
 }
 
 /// Minimal Carbon global hotkey.
