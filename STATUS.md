@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 1:45 am ET by Yusuf
+Last updated: Sun Nov 15, 1:50 am ET by Yusuf
 
 ## People
 
@@ -108,6 +108,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T42 (new) Cards must not say "Them" ("Them explained that…", seen in the in-person test): one line in the catch-up and question prompts, and the same in the built-in copies. In Aziz's folders, as a separate small PR | Yusuf | `yusuf/prompt-them` | Sun 1:50 am | Being written on the MacBook; needs the gate and `clueless-bench grounding` on the Mac mini |
 
 ## Up next
 
