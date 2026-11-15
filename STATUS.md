@@ -4,7 +4,7 @@ The live answer to "who is doing what". Read it before starting anything; update
 finish or drop a task. History of finished work is in [WORKLOG.md](WORKLOG.md). Rules are in
 [CLAUDE.md](CLAUDE.md).
 
-Last updated: Sun Nov 15, 10:50 am ET by Aziz
+Last updated: Sun Nov 15, 11:00 am ET by Aziz
 
 ## People
 
@@ -108,6 +108,7 @@ One line per claimed task. Add your line and push it to `main` BEFORE you start 
 
 | Task | Who | Branch | Started | Notes |
 |---|---|---|---|---|
+| T50 (new) Study mode, from Aziz's in-person test of `main @ aee6bbd`: a button that hides the blue "You could say" box; "Speak answers" as a button next to Catch me up instead of a menu entry; the eye next to "Clueless" follows the camera at once (it lagged by seconds); looking away counts after 4.5 s, not 3 s | Aziz | `aziz/study-fixes` | Sun 11:00 am | After the feature freeze: asked for by Aziz during the demo test. Being written on the Windows laptop, cannot be compiled there. In `Sources/Clueless/` (Yusuf's folder), one small PR |
 
 ## Up next
 
