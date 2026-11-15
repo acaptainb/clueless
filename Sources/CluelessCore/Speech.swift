@@ -138,7 +138,8 @@ public final class Speaker: @unchecked Sendable {
             model: .qwen3TTS_0_6b,
             modelFolder: Paths.ttsModels,
             tokenizerFolder: Paths.ttsTokenizer,
-            verbose: false
+            verbose: false,
+            download: false     // never fetch at run time: a missing file must fail here, not download quietly
         ))
         loadSeconds = Date().timeIntervalSince(t0)
     }
