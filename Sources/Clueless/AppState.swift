@@ -33,6 +33,10 @@ final class AppState: ObservableObject {
     @AppStorage("userName") var userName = "Yusuf"
     @AppStorage("speak") var speak = true
     @AppStorage("lookAway") var lookAway = true { didSet { syncPresence() } }
+    /// T48: eyes turned away with the head still also count as looking away. CLUELESS_EYES=0 forces it off.
+    @AppStorage("countEyes") var countEyes = true { didSet { webcam.setEyesCount(eyesCount) } }
+    static let eyesForcedOff = ProcessInfo.processInfo.environment["CLUELESS_EYES"] == "0"
+    var eyesCount: Bool { countEyes && !AppState.eyesForcedOff }
     @AppStorage("screenMethod") var screenMethodRaw = ScreenMethod.auto.rawValue
 
     struct HUD {
@@ -83,8 +87,9 @@ final class AppState: ObservableObject {
     let webcam = Presence()            // not private: the camera test window reads its frames (T31)
     private let voice = VoiceRecorder()
     private var webcamOn = false
-    /// True while the camera test window is open: keeps the webcam on even when paused (CameraTestView.swift).
-    var cameraTest = false { didSet { syncPresence() } }
+    /// True while the camera window is open: keeps the webcam on even when paused (CameraTestView.swift).
+    /// Published so the camera button in the panel header shows whether the window is open.
+    @Published var cameraTest = false { didSet { syncPresence() } }
     private let pathMonitor = NWPathMonitor()
     private var hudTimer: Timer?
     private var napGuard: NSObjectProtocol?
@@ -109,6 +114,7 @@ final class AppState: ObservableObject {
                                                          reason: "Live transcription")
         webcam.onStatus = { [weak self] status in self?.presence = status }
         webcam.onEvent = { [weak self] event in self?.presenceChanged(event) }
+        webcam.setEyesCount(eyesCount)
         // Test hook: CLUELESS_TEST_LOOKAWAY=<seconds> pretends the user looked away for that long, then
         // came back, so the trigger-to-card path can be checked without a person at the webcam.
         if let seconds = Double(ProcessInfo.processInfo.environment["CLUELESS_TEST_LOOKAWAY"] ?? "") {

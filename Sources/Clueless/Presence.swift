@@ -65,15 +65,21 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         /// Radians, signed, as Vision reports them. nil when there is no face or Vision gave no angle.
         var yaw: Double?
         var pitch: Double?
-        /// The per-frame decision that goes into the tracker.
+        /// The per-frame decision that goes into the tracker: head within the limit and, when eye
+        /// direction counts (T48), eyes not turned away.
         var attending: Bool
+        /// The head-only part of that decision (the whole decision before T48).
+        var headAttending: Bool
+        /// True when eye direction was allowed to change the decision for this frame.
+        var eyesCount: Bool
         /// The tracker's debounced state after this frame.
         var away: Bool
         var event: PresenceTracker.Event?
         var maxAngle: Double
         /// Pixel size of the analysed picture, to place `box` over a preview.
         var imageSize: CGSize
-        /// Eye landmarks and gaze estimate; nil unless `setEyeTracking(true)` was called (testing only).
+        /// Eye landmarks and gaze estimate; nil when they were not measured for this frame or Vision
+        /// found no landmarks.
         var eyes: EyeGaze?
     }
     /// Called on the main queue for every analysed frame (about 3 a second) while the camera runs.
@@ -95,10 +101,21 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     private var wanted = false
     private var lastFrame = Date.distantPast
     private var trackEyes = false
+    private var eyesCount = false
 
-    /// Testing only (camera test window): also estimate where the eyes point, one more Vision request
-    /// per analysed frame. The look-away decision does not use it.
+    /// Camera window: measure the eyes on every analysed frame so the tracking view can draw them,
+    /// whether or not they count for the decision.
     func setEyeTracking(_ on: Bool) { queue.async { self.trackEyes = on } }
+
+    /// T48: when on, a frame whose eyes are turned sideways or up / down is not attending even if the
+    /// head faces the screen. Off gives the head-only rule. Set by AppState (menu toggle, CLUELESS_EYES=0).
+    func setEyesCount(_ on: Bool) {
+        queue.async {
+            guard self.eyesCount != on else { return }
+            self.eyesCount = on
+            Log.write("[presence] eye direction " + (on ? "counts as looking away" : "is not used"))
+        }
+    }
 
     func start() {
         queue.async { self.wanted = true }
@@ -161,18 +178,25 @@ final class Presence: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         let face = (request.results ?? []).max {
             $0.boundingBox.width * $0.boundingBox.height < $1.boundingBox.width * $1.boundingBox.height
         }
-        var attending = false
+        var headAttending = false
         if let face {
             let yaw = abs(face.yaw?.doubleValue ?? 0), pitch = abs(face.pitch?.doubleValue ?? 0)
-            attending = yaw < maxAngle && pitch < maxAngle
+            headAttending = yaw < maxAngle && pitch < maxAngle
         }
-        let event = tracker.update(attending: attending, at: now)
+        // Eyes: measured when they can change the decision (the head is within the limit) or when the
+        // camera window wants to draw them. Closed eyes and missing landmarks leave the head-only rule.
         var eyes: EyeGaze?
-        if trackEyes, let face { eyes = EyeGaze.measure(face: face, in: pixels) }
+        if let face, trackEyes || (eyesCount && headAttending) {
+            eyes = EyeGaze.measure(face: face, in: pixels)
+        }
+        var attending = headAttending
+        if eyesCount, let eyes, eyes.lookingAway { attending = false }
+        let event = tracker.update(attending: attending, at: now)
         let status: Status = tracker.away ? .away : .present
         let frame = Frame(at: now, faces: request.results?.count ?? 0, box: face?.boundingBox,
                           yaw: face?.yaw?.doubleValue, pitch: face?.pitch?.doubleValue,
-                          attending: attending, away: tracker.away, event: event, maxAngle: maxAngle,
+                          attending: attending, headAttending: headAttending, eyesCount: eyesCount,
+                          away: tracker.away, event: event, maxAngle: maxAngle,
                           imageSize: CGSize(width: CVPixelBufferGetWidth(pixels), height: CVPixelBufferGetHeight(pixels)),
                           eyes: eyes)
         DispatchQueue.main.async {
