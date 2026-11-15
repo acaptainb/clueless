@@ -9,9 +9,10 @@ T07 speak early (`yusuf/speak-early`, PR #12) and T06 screen receipts (`yusuf/re
 
 ## Pushed, waiting for a Mac mini test
 
+- `yusuf/voice-ask` (T25). If voice processing causes trouble (ducked speakers, broken system-audio capture), remove the two `setVoiceProcessingEnabled` lines in `VoiceAsk.swift` and accept that the lecture bleeds into the question.
 - `yusuf/hud` (T20). Never seen on screen: the top row may be too wide for the 420 pt panel.
 - `yusuf/receipts` (T06). It was written in a separate working copy, `.worktrees/receipts`, because the main folder was on `yusuf/speak-early`. Watch for: the Clueless panel showing up inside the saved screenshot; the thumbnail making the card taller than the panel. T06 and T07 both edit `AppState.run`; a trial merge of the two was clean.
-- Seen in the Mac mini look-away test: the catch-up ran before the last few seconds of audio were transcribed ("3 lines missed" logged, 5 in the window). Idea: on a trigger, flush the chunkers (`AudioChunker.flush()`) and wait for the transcription chain before building the card. Not on the board yet.
+- `yusuf/fresh-catchup` (T29): the fix for cards missing the last few seconds. Waiting for the Mac mini.
 - In-person live tests for T05, T16, T17 are deferred to the end: see T28 in STATUS.md. T05 will likely need `maxAngle` / `awayAfter` tuning in `Presence.swift`.
 
 ## Ideas and things to remember
