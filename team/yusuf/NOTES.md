@@ -9,6 +9,7 @@ The shared board is [STATUS.md](../../STATUS.md); finished work goes in [WORKLOG
 
 ## Pushed, waiting for a Mac mini test
 
+- `yusuf/call-notes-app` (T33, PR #24, session #2): call notes wired into the app. Watch for: SpeakerKit models missing on the Mac mini; names not matching `demo/call/expected.json`; how long labels and names take before the notes start. Session #2 works in `.worktrees/receipts`.
 - Nothing from session #1. `main` after the T30 and T25 merges is compile-checked on the MacBook only.
 - In-person tests for everything are deferred to the end: T28 in STATUS.md.
 
