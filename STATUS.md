@@ -60,7 +60,7 @@ Code is not done until it has passed on the Mac mini. After pushing a branch, ad
 STATUS.md change straight to `main`). Whoever runs the test fills in the result and removes the line
 once the PR is merged.
 
-Mac mini in use right now by: nobody
+Mac mini in use right now by: Aziz (Mac mini session): gates on the queued branches, then the live launches for `main`, since Sun 9:55 am
 
 Run order: the top row (`main` with PR #8) is next, ahead of any row added later; new rows go BELOW it. A `main` that does not run blocks every other branch.
 Then the Yusuf rows, then the remaining Aziz rows 2 to 4 in order. Row 3 makes the recordings that the top
