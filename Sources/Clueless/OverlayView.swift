@@ -105,6 +105,7 @@ struct OverlayView: View {
                 Button("Session notes", action: state.notes)
                 Toggle("Speak answers", isOn: $state.speak)
                 Toggle("Catch me up when I look away (webcam)", isOn: $state.lookAway)
+                Button("Camera test window (testing only)") { state.openCameraTest() }
                 Picker("Screen input", selection: $state.screenMethodRaw) {
                     Text("Auto: screenshot only for visual questions").tag(ScreenMethod.auto.rawValue)
                     Text("Screenshot + OCR text (most accurate)").tag(ScreenMethod.both.rawValue)
